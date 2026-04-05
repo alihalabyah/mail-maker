@@ -19,13 +19,18 @@ import { TemplatesService } from './templates.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { RenderRequestDto } from '../render/dto/render-request.dto';
+import { SendTestDto } from '../render/dto/send-test.dto';
+import { MailerService } from '../mailer/mailer.service';
 
 @ApiTags('templates')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('templates')
 export class TemplatesController {
-  constructor(private templatesService: TemplatesService) {}
+  constructor(
+    private templatesService: TemplatesService,
+    private mailerService: MailerService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new email template' })
@@ -67,6 +72,16 @@ export class TemplatesController {
   async preview(@Param('id') id: string, @Body() dto: RenderRequestDto) {
     const template = await this.templatesService.findOne(id);
     return this.templatesService.preview(template, dto.variables);
+  }
+
+  @Post(':id/send-test')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Render and send a test email (JWT auth, for the UI)' })
+  async sendTest(@Param('id') id: string, @Body() dto: SendTestDto) {
+    const template = await this.templatesService.findOne(id);
+    const { html, subject } = this.templatesService.preview(template, dto.variables ?? {});
+    await this.mailerService.sendMail({ to: dto.to, subject, html });
+    return { ok: true, to: dto.to, subject };
   }
 
   @Delete(':id')
