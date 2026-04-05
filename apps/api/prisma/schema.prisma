@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ApiKeyScope {
+  READ_ONLY
+  RENDER
+  ADMIN
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(USER)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  templates    Template[]
+  apiKeys      ApiKey[]
+}
+
+model Template {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  description  String?
+  subject      String
+  designJson   Json
+  htmlTemplate String   @db.Text
+  variables    Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdById  String
+  createdBy    User     @relation(fields: [createdById], references: [id])
+}
+
+model ApiKey {
+  id         String        @id @default(cuid())
+  name       String
+  keyHash    String        @unique
+  prefix     String
+  scopes     ApiKeyScope[]
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime      @default(now())
+}

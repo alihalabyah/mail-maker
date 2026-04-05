@@ -1,0 +1,13 @@
+node_modules
+dist
+.next
+build
+.turbo
+*.env
+!*.env.example
+!*.env.local.example
+prisma/migrations/**/migration.sql
+*.log
+.DS_Store
+coverage
+apps/web.worktrees/
