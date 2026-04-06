@@ -7,6 +7,7 @@ import { TemplatesModule } from './templates/templates.module';
 import { StorageModule } from './storage/storage.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { RenderModule } from './render/render.module';
+import { ComponentsModule } from './components/components.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RenderModule } from './render/render.module';
     StorageModule,
     ApiKeysModule,
     RenderModule,
+    ComponentsModule,
   ],
 })
 export class AppModule {}
