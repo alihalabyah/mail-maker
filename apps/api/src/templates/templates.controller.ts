@@ -71,7 +71,7 @@ export class TemplatesController {
   @ApiOperation({ summary: 'Preview a rendered template (JWT auth, for the UI)' })
   async preview(@Param('id') id: string, @Body() dto: RenderRequestDto) {
     const template = await this.templatesService.findOne(id);
-    return this.templatesService.preview(template, dto.variables);
+    return await this.templatesService.preview(template, dto.variables);
   }
 
   @Post(':id/send-test')
@@ -79,7 +79,7 @@ export class TemplatesController {
   @ApiOperation({ summary: 'Render and send a test email (JWT auth, for the UI)' })
   async sendTest(@Param('id') id: string, @Body() dto: SendTestDto) {
     const template = await this.templatesService.findOne(id);
-    const { html, subject } = this.templatesService.preview(template, dto.variables ?? {});
+    const { html, subject } = await this.templatesService.preview(template, dto.variables ?? {});
     await this.mailerService.sendMail({ to: dto.to, subject, html });
     return { ok: true, to: dto.to, subject };
   }

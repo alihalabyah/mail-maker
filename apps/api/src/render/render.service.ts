@@ -6,14 +6,18 @@ import {
 } from '@nestjs/common';
 import * as Handlebars from 'handlebars';
 import { PrismaService } from '../prisma/prisma.service';
+import { ComponentsService } from '../components/components.service';
 import { TemplateVariable } from '@mail-maker/shared';
 
 @Injectable()
 export class RenderService implements OnModuleInit {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private componentsService: ComponentsService,
+  ) {}
 
   onModuleInit() {
-    // Register useful Handlebars helpers
+    // Register useful Handlebars helpers on the global instance
     Handlebars.registerHelper('upper', (str: unknown) =>
       typeof str === 'string' ? str.toUpperCase() : str,
     );
@@ -47,8 +51,24 @@ export class RenderService implements OnModuleInit {
     const merged = this.mergeWithDefaults(schema, variables);
     this.validateVariables(schema, merged);
 
-    const htmlFn = Handlebars.compile(template.htmlTemplate);
-    const subjectFn = Handlebars.compile(template.subject);
+    const hbs = await this.componentsService.resolvePartials(template.htmlTemplate, merged);
+    hbs.registerHelper('upper', (str: unknown) =>
+      typeof str === 'string' ? str.toUpperCase() : str,
+    );
+    hbs.registerHelper('lower', (str: unknown) =>
+      typeof str === 'string' ? str.toLowerCase() : str,
+    );
+    hbs.registerHelper('formatDate', (date: unknown) => {
+      if (!date) return '';
+      return new Date(date as string).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    });
+
+    const htmlFn = hbs.compile(template.htmlTemplate);
+    const subjectFn = hbs.compile(template.subject);
 
     return {
       html: htmlFn(merged),
