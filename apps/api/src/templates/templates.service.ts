@@ -81,7 +81,8 @@ export class TemplatesService {
   }
 
   async update(id: string, dto: UpdateTemplateDto) {
-    await this.findOne(id);
+    const existing = await this.prisma.template.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Template not found');
 
     if (dto.slug) {
       const conflict = await this.prisma.template.findFirst({
@@ -111,7 +112,8 @@ export class TemplatesService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const existing = await this.prisma.template.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Template not found');
     await this.prisma.template.delete({ where: { id } });
   }
 
@@ -152,6 +154,8 @@ export class TemplatesService {
           const component = await this.prisma.component.findUnique({ where: { slug } });
           if (!component) continue;
 
+          // Use only the component's own default variables for the editor preview.
+          // Runtime template variables are not available at editor-open time.
           const freshHtml = this.componentsService.renderHtml(component);
           blockValues.html = `<!-- component:${slug} -->${freshHtml}<!-- /component:${slug} -->`;
         }
