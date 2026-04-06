@@ -31,7 +31,7 @@ export class TemplatesService {
         subject: dto.subject,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         designJson: dto.designJson as unknown as Prisma.InputJsonValue,
-        htmlTemplate: dto.htmlTemplate,
+        htmlTemplate: this.stripComponentPreviews(dto.htmlTemplate),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         variables: (dto.variables ?? []) as unknown as Prisma.InputJsonValue,
         createdById: userId,
@@ -76,7 +76,8 @@ export class TemplatesService {
   async findOne(id: string) {
     const template = await this.prisma.template.findUnique({ where: { id } });
     if (!template) throw new NotFoundException('Template not found');
-    return template;
+    const refreshedDesignJson = await this.refreshComponentPreviews(template.designJson);
+    return { ...template, designJson: refreshedDesignJson };
   }
 
   async update(id: string, dto: UpdateTemplateDto) {
@@ -100,7 +101,7 @@ export class TemplatesService {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           designJson: dto.designJson as unknown as Prisma.InputJsonValue,
         }),
-        ...(dto.htmlTemplate && { htmlTemplate: dto.htmlTemplate }),
+        ...(dto.htmlTemplate !== undefined && { htmlTemplate: this.stripComponentPreviews(dto.htmlTemplate) }),
         ...(dto.variables && {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           variables: dto.variables as unknown as Prisma.InputJsonValue,
@@ -112,6 +113,52 @@ export class TemplatesService {
   async remove(id: string) {
     await this.findOne(id);
     await this.prisma.template.delete({ where: { id } });
+  }
+
+  private stripComponentPreviews(html: string): string {
+    return html.replace(
+      /<!-- component:([a-z0-9-]+) -->[\s\S]*?<!-- \/component:\1 -->/g,
+      (_, slug) => `{{> ${slug}}}`,
+    );
+  }
+
+  private async refreshComponentPreviews(designJson: Prisma.JsonValue): Promise<Prisma.JsonValue> {
+    const design = designJson as Record<string, unknown>;
+    const body = design?.body as Record<string, unknown> | undefined;
+    const rows = body?.rows as Array<Record<string, unknown>> | undefined;
+    if (!rows) return designJson;
+
+    for (const row of rows) {
+      const values = row.values as Record<string, unknown> | undefined;
+      if (!values?.locked) continue;
+
+      const columns = row.columns as Array<Record<string, unknown>> | undefined;
+      if (!columns) continue;
+
+      for (const col of columns) {
+        const contents = col.contents as Array<Record<string, unknown>> | undefined;
+        if (!contents) continue;
+
+        for (const block of contents) {
+          if (block.type !== 'html') continue;
+          const blockValues = block.values as Record<string, unknown>;
+          const html = blockValues?.html as string | undefined;
+          if (!html) continue;
+
+          const match = html.match(/<!-- component:([a-z0-9-]+) -->/);
+          if (!match) continue;
+          const slug = match[1];
+
+          const component = await this.prisma.component.findUnique({ where: { slug } });
+          if (!component) continue;
+
+          const freshHtml = this.componentsService.renderHtml(component);
+          blockValues.html = `<!-- component:${slug} -->${freshHtml}<!-- /component:${slug} -->`;
+        }
+      }
+    }
+
+    return design as Prisma.JsonValue;
   }
 
   /** JWT-protected preview endpoint: render with variables, no API key needed. */
