@@ -4,11 +4,13 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as Handlebars from 'handlebars';
 import { PrismaService } from '../prisma/prisma.service';
 import { ComponentsService } from '../components/components.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { TemplateVariable } from '@mail-maker/shared';
+import { registerStandardHelpers } from '../render/handlebars-helpers';
 
 @Injectable()
 export class TemplatesService {
@@ -129,24 +131,13 @@ export class TemplatesService {
       }
     }
 
-    const hbs = await this.componentsService.resolvePartials(template.htmlTemplate, merged);
-    hbs.registerHelper('upper', (str: unknown) =>
-      typeof str === 'string' ? str.toUpperCase() : str,
-    );
-    hbs.registerHelper('lower', (str: unknown) =>
-      typeof str === 'string' ? str.toLowerCase() : str,
-    );
-    hbs.registerHelper('formatDate', (date: unknown) => {
-      if (!date) return '';
-      return new Date(date as string).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    });
+    const hbs = Handlebars.create();
+    registerStandardHelpers(hbs);
+    await this.componentsService.resolvePartials(template.htmlTemplate, merged, hbs);
 
-    const htmlFn = hbs.compile(template.htmlTemplate);
-    const subjectFn = hbs.compile(template.subject);
-    return { html: htmlFn(merged), subject: subjectFn(merged) };
+    return {
+      html: hbs.compile(template.htmlTemplate)(merged),
+      subject: hbs.compile(template.subject)(merged),
+    };
   }
 }

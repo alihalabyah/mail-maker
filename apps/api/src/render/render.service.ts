@@ -8,6 +8,7 @@ import * as Handlebars from 'handlebars';
 import { PrismaService } from '../prisma/prisma.service';
 import { ComponentsService } from '../components/components.service';
 import { TemplateVariable } from '@mail-maker/shared';
+import { registerStandardHelpers } from './handlebars-helpers';
 
 @Injectable()
 export class RenderService implements OnModuleInit {
@@ -18,20 +19,7 @@ export class RenderService implements OnModuleInit {
 
   onModuleInit() {
     // Register useful Handlebars helpers on the global instance
-    Handlebars.registerHelper('upper', (str: unknown) =>
-      typeof str === 'string' ? str.toUpperCase() : str,
-    );
-    Handlebars.registerHelper('lower', (str: unknown) =>
-      typeof str === 'string' ? str.toLowerCase() : str,
-    );
-    Handlebars.registerHelper('formatDate', (date: unknown) => {
-      if (!date) return '';
-      return new Date(date as string).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    });
+    registerStandardHelpers(Handlebars);
   }
 
   async getTemplate(idOrSlug: string) {
@@ -51,28 +39,13 @@ export class RenderService implements OnModuleInit {
     const merged = this.mergeWithDefaults(schema, variables);
     this.validateVariables(schema, merged);
 
-    const hbs = await this.componentsService.resolvePartials(template.htmlTemplate, merged);
-    hbs.registerHelper('upper', (str: unknown) =>
-      typeof str === 'string' ? str.toUpperCase() : str,
-    );
-    hbs.registerHelper('lower', (str: unknown) =>
-      typeof str === 'string' ? str.toLowerCase() : str,
-    );
-    hbs.registerHelper('formatDate', (date: unknown) => {
-      if (!date) return '';
-      return new Date(date as string).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    });
-
-    const htmlFn = hbs.compile(template.htmlTemplate);
-    const subjectFn = hbs.compile(template.subject);
+    const hbs = Handlebars.create();
+    registerStandardHelpers(hbs);
+    await this.componentsService.resolvePartials(template.htmlTemplate, merged, hbs);
 
     return {
-      html: htmlFn(merged),
-      subject: subjectFn(merged),
+      html: hbs.compile(template.htmlTemplate)(merged),
+      subject: hbs.compile(template.subject)(merged),
     };
   }
 

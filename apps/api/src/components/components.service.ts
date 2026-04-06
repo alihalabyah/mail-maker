@@ -87,16 +87,20 @@ export class ComponentsService {
    * and register them as partials on an isolated Handlebars environment.
    * Returns the isolated instance to avoid mutating the global registry.
    */
-  async resolvePartials(htmlTemplate: string, variables: Record<string, unknown> = {}): Promise<typeof Handlebars> {
-    const hbs = Handlebars.create();
+  async resolvePartials(
+    htmlTemplate: string,
+    variables: Record<string, unknown> = {},
+    hbs?: typeof Handlebars,
+  ): Promise<typeof Handlebars> {
+    const instance = hbs ?? Handlebars.create();
     const slugs = [...htmlTemplate.matchAll(/\{\{>\s*([a-z0-9-]+)\s*\}\}/g)].map(m => m[1]);
     if (slugs.length > 0) {
       const components = await this.prisma.component.findMany({ where: { slug: { in: slugs } } });
       for (const c of components) {
-        const rendered = this.renderHtml(c, variables);
-        hbs.registerPartial(c.slug, rendered);
+        const rendered = this.renderHtml(c, variables, instance);
+        instance.registerPartial(c.slug, rendered);
       }
     }
-    return hbs;
+    return instance;
   }
 }
