@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,10 +9,12 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
 import { useTemplate, useUpdateTemplate } from '@/hooks/useTemplates';
+import { useComponents } from '@/hooks/useComponents';
 import { Header } from '@/components/layout/Header';
 import { VariablesPanel } from '@/components/editor/VariablesPanel';
-import type { TemplateVariable } from '@/types';
-import type { EmailEditorValues } from '@/components/editor/EmailEditorWrapper';
+import { api } from '@/lib/api-client';
+import type { TemplateVariable, ComponentSummary } from '@/types';
+import type { EmailEditorValues, EmailEditorHandle } from '@/components/editor/EmailEditorWrapper';
 
 const EmailEditorWrapper = dynamic(
   () => import('@/components/editor/EmailEditorWrapper').then((m) => m.EmailEditorWrapper),
@@ -35,6 +37,9 @@ export default function EditTemplatePage() {
   const router = useRouter();
   const { data: template, isLoading } = useTemplate(id);
   const updateMutation = useUpdateTemplate(id);
+
+  const editorRef = useRef<EmailEditorHandle>(null);
+  const { data: components } = useComponents();
 
   const [variables, setVariables] = useState<TemplateVariable[]>([]);
   const [showMeta, setShowMeta] = useState(true);
@@ -90,6 +95,44 @@ export default function EditTemplatePage() {
       setSaving(false);
     }
   });
+
+  const handleInsertComponent = async (component: ComponentSummary) => {
+    try {
+      const { html: previewHtml } = await api.post<{ html: string }>(
+        `/components/${component.id}/preview`,
+        { variables: {} },
+      );
+
+      const lockedRow = {
+        cells: [1],
+        columns: [{
+          contents: [{
+            type: 'html',
+            values: {
+              html: `<!-- component:${component.slug} -->${previewHtml}<!-- /component:${component.slug} -->`,
+            },
+          }],
+          values: {},
+        }],
+        values: { locked: true },
+      };
+
+      editorRef.current?.editor?.saveDesign((design) => {
+        const body = design.body as Record<string, unknown>;
+        const updatedDesign = {
+          ...design,
+          body: {
+            ...body,
+            rows: [...((body.rows as unknown[]) ?? []), lockedRow],
+          },
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        editorRef.current?.editor?.loadDesign(updatedDesign as any);
+      });
+    } catch {
+      // silently fail — the editor remains unchanged
+    }
+  };
 
   if (isLoading) {
     return (
@@ -198,11 +241,41 @@ export default function EditTemplatePage() {
             <div className="border-t">
               <VariablesPanel variables={variables} onChange={setVariables} />
             </div>
+
+            {components && components.length > 0 && (
+              <div className="border-t pt-4 space-y-2 px-4 pb-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1">
+                  Shared Components
+                </h3>
+                <p className="text-xs text-gray-400 px-1">
+                  Click Add to insert a locked block into the email.
+                </p>
+                <div className="space-y-2">
+                  {components.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between gap-2 bg-gray-50 rounded px-2 py-1.5">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-gray-800 truncate">{c.name}</p>
+                        {c.description && (
+                          <p className="text-xs text-gray-400 truncate">{c.description}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleInsertComponent(c)}
+                        className="shrink-0 px-2 py-1 text-xs border border-primary text-primary rounded hover:bg-primary-light transition-colors"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </aside>
         )}
 
         <div className="flex-1 overflow-hidden">
           <EmailEditorWrapper
+            ref={editorRef}
             initialValues={initialValues}
             onSave={handleEditorSave}
             saving={saving}

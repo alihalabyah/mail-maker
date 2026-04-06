@@ -1,12 +1,16 @@
 'use client';
 
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import EmailEditor, { EditorRef } from 'react-email-editor';
 import { getToken } from '@/lib/auth';
 
 export interface EmailEditorValues {
   design: Record<string, unknown>;
   html: string;
+}
+
+export interface EmailEditorHandle {
+  editor: EditorRef['editor'];
 }
 
 interface EmailEditorWrapperProps {
@@ -71,12 +75,19 @@ function HtmlCodeEditor({
 
 // ─── Unlayer visual editor ────────────────────────────────────────────────────
 
-export function EmailEditorWrapper({
+export const EmailEditorWrapper = forwardRef<EmailEditorHandle, EmailEditorWrapperProps>(
+function EmailEditorWrapper({
   initialValues,
   onSave,
   saving = false,
-}: EmailEditorWrapperProps) {
+}: EmailEditorWrapperProps, ref) {
   const editorRef = useRef<EditorRef>(null);
+
+  useImperativeHandle(ref, () => ({
+    get editor() {
+      return editorRef.current?.editor ?? null;
+    },
+  }));
 
   const onReady = useCallback(() => {
     if (initialValues?.design && isUnlayerDesign(initialValues.design)) {
@@ -156,4 +167,4 @@ export function EmailEditorWrapper({
       </div>
     </div>
   );
-}
+});
