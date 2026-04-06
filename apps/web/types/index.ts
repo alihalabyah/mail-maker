@@ -21,6 +21,28 @@ export interface Template {
   updatedAt: string;
 }
 
+export interface Component {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string;
+  designJson: Record<string, unknown>;
+  htmlTemplate: string;
+  variables: import("@mail-maker/shared").TemplateVariable[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ComponentSummary {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string;
+  variables: import("@mail-maker/shared").TemplateVariable[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
