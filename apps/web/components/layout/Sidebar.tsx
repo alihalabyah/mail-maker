@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { LayoutTemplate, Key, LogOut } from 'lucide-react';
+import { LayoutTemplate, Puzzle, Key, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
   { href: '/templates', label: 'Templates', icon: LayoutTemplate },
+  { href: '/components', label: 'Components', icon: Puzzle },
   { href: '/settings/api-keys', label: 'API Keys', icon: Key },
 ];
 
