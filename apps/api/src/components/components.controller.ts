@@ -50,7 +50,8 @@ export class ComponentsController {
   @ApiOperation({ summary: 'Preview rendered component HTML' })
   async preview(@Param('id') id: string, @Body() dto: RenderRequestDto) {
     const component = await this.componentsService.findOne(id);
-    const html = this.componentsService.renderHtml(component, dto.variables);
+    const hbs = await this.componentsService.resolvePartials(component.htmlTemplate, dto.variables);
+    const html = this.componentsService.renderHtml(component, dto.variables, hbs);
     return { html };
   }
 }
