@@ -50,6 +50,7 @@ export default function EditTemplatePage() {
   const [showMeta, setShowMeta] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
   const [insertError, setInsertError] = useState<string | null>(null);
   const [insertingId, setInsertingId] = useState<string | null>(null);
 
@@ -81,6 +82,7 @@ export default function EditTemplatePage() {
         variables,
       });
       setSaved(true);
+      setHasUnpublishedChanges(true);
       setTimeout(() => setSaved(false), 2000);
     } finally {
       setSaving(false);
@@ -97,6 +99,7 @@ export default function EditTemplatePage() {
         subject: meta.subject,
         variables,
       });
+      setHasUnpublishedChanges(true);
       router.refresh();
     } finally {
       setSaving(false);
@@ -282,11 +285,15 @@ export default function EditTemplatePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => publishMutation.mutate()}
-                  disabled={publishMutation.isPending || template.status === 'published'}
+                  onClick={() => publishMutation.mutate(undefined, {
+                    onSuccess: () => {
+                      setHasUnpublishedChanges(false);
+                    },
+                  })}
+                  disabled={publishMutation.isPending || !hasUnpublishedChanges && template.status === 'published'}
                   className="flex-1 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50 disabled:opacity-40 transition-colors"
                 >
-                  {publishMutation.isPending ? 'Publishing…' : template.status === 'published' ? 'Published' : 'Publish'}
+                  {publishMutation.isPending ? 'Publishing…' : template.status === 'published' && !hasUnpublishedChanges ? 'Published' : 'Publish'}
                 </button>
               </div>
             </form>
