@@ -19,32 +19,59 @@ enum ApiKeyScope {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  passwordHash String
-  role         Role       @default(USER)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                String            @id @default(cuid())
+  email             String            @unique
+  passwordHash      String
+  role              Role              @default(USER)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
-  templates    Template[]
-  apiKeys      ApiKey[]
-  components   Component[]
+  templates         Template[]
+  templateVersions TemplateVersion[]
+  apiKeys           ApiKey[]
+  components        Component[]
 }
 
 model Template {
-  id           String   @id @default(cuid())
-  slug         String   @unique
-  name         String
-  description  String?
-  subject      String
-  designJson   Json
-  htmlTemplate String   @db.Text
-  variables    Json     @default("[]")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String            @id @default(cuid())
+  slug             String            @unique   // kept for backwards compat, derived as baseSlug[-locale]
+  baseSlug         String
+  locale           String            @default("en")
+  status           String            @default("draft")  // "draft" | "published"
+  name             String
+  description      String?
+  subject          String
+  designJson       Json
+  htmlTemplate     String            @db.Text
+  variables        Json              @default("[]")
+  currentVersionId String?
+  currentVersion   TemplateVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  versions         TemplateVersion[] @relation("AllVersions")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  createdById      String
+  createdBy        User              @relation(fields: [createdById], references: [id])
 
-  createdById  String
-  createdBy    User     @relation(fields: [createdById], references: [id])
+  @@unique([baseSlug, locale])
+}
+
+model TemplateVersion {
+  id            String   @id @default(cuid())
+  templateId    String
+  template      Template @relation("AllVersions", fields: [templateId], references: [id], onDelete: Cascade)
+  version       Int
+  htmlTemplate  String   @db.Text
+  designJson    Json
+  subject       String
+  variables     Json
+  publishedAt   DateTime @default(now())
+  publishedById String
+  publishedBy   User     @relation(fields: [publishedById], references: [id])
+
+  // Back-reference for currentVersion on Template (one-to-one optional)
+  currentFor    Template[] @relation("CurrentVersion")
+
+  @@unique([templateId, version])
 }
 
 model Component {
