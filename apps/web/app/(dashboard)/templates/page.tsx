@@ -60,6 +60,7 @@ export default function TemplatesPage() {
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Locale</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Slug</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Variables</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Updated</th>
@@ -70,6 +71,30 @@ export default function TemplatesPage() {
                 {data.items.map((t) => (
                   <tr key={t.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-900">{t.name}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`px-1.5 py-0.5 text-xs font-medium rounded uppercase ${
+                            t.locale === 'ar'
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}
+                          aria-label={`Locale: ${t.locale ?? 'en'}`}
+                        >
+                          {t.locale ?? 'en'}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.5 text-xs font-medium rounded ${
+                            t.status === 'published'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-amber-100 text-amber-700'
+                          }`}
+                          aria-label={`Status: ${t.status ?? 'draft'}`}
+                        >
+                          {t.status ?? 'draft'}
+                        </span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{t.slug}</td>
                     <td className="px-4 py-3 text-gray-500">
                       {(t.variables as unknown[]).length} vars

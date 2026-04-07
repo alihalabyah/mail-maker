@@ -1,12 +1,27 @@
 export type {
   TemplateVariable,
-  TemplateSummary,
   ApiKeySummary,
   RenderRequest,
   RenderResponse,
   UserSummary,
 } from "@mail-maker/shared";
 export { ApiKeyScope, Role } from "@mail-maker/shared";
+
+// Extend TemplateSummary with locale/status fields
+// The shared package will be updated separately, but we need these fields now
+export interface TemplateSummary {
+  id: string;
+  slug: string;
+  baseSlug?: string;
+  locale?: string;
+  status?: string;
+  name: string;
+  description?: string;
+  subject: string;
+  variables: import("@mail-maker/shared").TemplateVariable[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface Template {
   id: string;
