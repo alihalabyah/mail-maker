@@ -58,6 +58,14 @@ export function useDeleteTemplate() {
   });
 }
 
+export function useDuplicateTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<Template>(`/templates/${id}/duplicate`, {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [TEMPLATES_KEY] }),
+  });
+}
+
 export function usePublishTemplate(id: string) {
   const qc = useQueryClient();
   return useMutation({

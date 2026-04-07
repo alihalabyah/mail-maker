@@ -105,6 +105,12 @@ export class TemplatesController {
     return this.templatesService.remove(id);
   }
 
+  @Post(':id/duplicate')
+  @ApiOperation({ summary: 'Duplicate a template' })
+  duplicate(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.templatesService.duplicate(id, user.id);
+  }
+
   @Post(':id/publish')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Publish current draft as a new version' })

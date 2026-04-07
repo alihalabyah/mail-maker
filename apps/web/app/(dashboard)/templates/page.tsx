@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Pencil, Trash2, Eye } from "lucide-react";
-import { useTemplates, useDeleteTemplate } from "@/hooks/useTemplates";
+import { Plus, Search, Pencil, Trash2, Eye, Copy } from "lucide-react";
+import { useTemplates, useDeleteTemplate, useDuplicateTemplate } from "@/hooks/useTemplates";
 import { Header } from "@/components/layout/Header";
 import type { TemplateSummary } from "@/types";
 
@@ -12,10 +12,17 @@ export default function TemplatesPage() {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useTemplates(search || undefined, page);
   const deleteMutation = useDeleteTemplate();
+  const duplicateMutation = useDuplicateTemplate();
 
   const handleDelete = async (t: TemplateSummary) => {
     if (!confirm(`Delete "${t.name}"? This cannot be undone.`)) return;
     await deleteMutation.mutateAsync(t.id);
+  };
+
+  const handleDuplicate = async (t: TemplateSummary) => {
+    const result = await duplicateMutation.mutateAsync(t.id);
+    // Navigate to the duplicated template
+    window.location.href = `/templates/${result.id}`;
   };
 
   return (
@@ -118,6 +125,14 @@ export default function TemplatesPage() {
                         >
                           <Pencil className="w-4 h-4" />
                         </Link>
+                        <button
+                          onClick={() => handleDuplicate(t)}
+                          disabled={duplicateMutation.isPending}
+                          className="p-1.5 text-gray-400 hover:text-primary rounded disabled:opacity-40"
+                          title="Duplicate"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleDelete(t)}
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded"

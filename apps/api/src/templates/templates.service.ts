@@ -136,6 +136,39 @@ export class TemplatesService {
     await this.prisma.template.delete({ where: { id } });
   }
 
+  async duplicate(id: string, userId: string) {
+    const template = await this.prisma.template.findUnique({ where: { id } });
+    if (!template) throw new NotFoundException('Template not found');
+
+    // Generate a unique baseSlug by appending "-copy"
+    let counter = 1;
+    let newBaseSlug = `${template.baseSlug}-copy`;
+    while (await this.prisma.template.findUnique({
+      where: { baseSlug_locale: { baseSlug: newBaseSlug, locale: template.locale } },
+    })) {
+      counter++;
+      newBaseSlug = `${template.baseSlug}-copy-${counter}`;
+    }
+
+    const newSlug = template.locale === 'en' ? newBaseSlug : `${newBaseSlug}-${template.locale}`;
+
+    return this.prisma.template.create({
+      data: {
+        slug: newSlug,
+        baseSlug: newBaseSlug,
+        locale: template.locale,
+        status: 'draft',
+        name: `${template.name} (Copy)`,
+        description: template.description,
+        subject: template.subject,
+        designJson: template.designJson as object,
+        htmlTemplate: template.htmlTemplate,
+        variables: template.variables as object,
+        createdById: userId,
+      },
+    });
+  }
+
   async publish(id: string, userId: string) {
     const template = await this.prisma.template.findUnique({ where: { id } });
     if (!template) throw new NotFoundException('Template not found');
