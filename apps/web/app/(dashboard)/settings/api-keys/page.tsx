@@ -342,6 +342,14 @@ function ApiDocs() {
       <div className="bg-white border rounded-lg p-5 space-y-5">
         <h3 className="text-sm font-semibold text-gray-800">API Quick Reference</h3>
 
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+          <p className="text-xs font-medium text-blue-800">🚀 Development with Tunnels</p>
+          <p className="text-xs text-blue-700">
+            Run <code className="bg-blue-100 px-1 py-0.5 rounded font-mono">npm run tunnel</code> to create public URLs for local development.
+            The script will display your tunnel URLs (Web, API, Mailpit).
+          </p>
+        </div>
+
         <p className="text-xs text-gray-500">
           Authenticate every request with your API key in the{" "}
           <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">X-API-Key</code> header.
@@ -356,8 +364,16 @@ function ApiDocs() {
           </div>
           <p className="text-xs font-medium text-gray-600">Request body</p>
           <CopyCode code={RENDER_BODY} />
-          <p className="text-xs font-medium text-gray-600 pt-1">cURL example</p>
-          <CopyCode code={RENDER_CURL} />
+          <p className="text-xs font-medium text-gray-600 pt-1">cURL example (using tunnel URL)</p>
+          <CopyCode code={`curl -X POST https://your-api-tunnel-url.trycloudflare.com/v1/render/your-template-slug \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: mk_your_key_here" \\
+  -d '{
+    "variables": {
+      "first_name": "John",
+      "order_number": "ORD-123"
+    }
+  }'`} />
         </div>
 
         <hr />
@@ -367,10 +383,22 @@ function ApiDocs() {
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-mono rounded">POST</span>
             <code className="text-xs font-mono text-gray-700">/v1/send-test/:templateSlug</code>
-            <span className="text-xs text-gray-400">— render + send to a test inbox</span>
+            <span className="text-xs text-gray-400">— render + send to test inbox (Mailpit)</span>
           </div>
+          <p className="text-xs text-gray-500">
+            Sends to a test inbox accessible via the Mailpit tunnel URL.
+          </p>
           <p className="text-xs font-medium text-gray-600">cURL example</p>
-          <CopyCode code={SEND_TEST_CURL} />
+          <CopyCode code={`curl -X POST https://your-api-tunnel-url.trycloudflare.com/v1/send-test/your-template-slug \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: mk_your_key_here" \\
+  -d '{
+    "to": "test@example.com",
+    "variables": {
+      "first_name": "John",
+      "order_number": "ORD-123"
+    }
+  }'`} />
         </div>
 
         <hr />
