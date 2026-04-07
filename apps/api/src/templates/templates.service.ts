@@ -35,6 +35,9 @@ export class TemplatesService {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         variables: (dto.variables ?? []) as unknown as Prisma.InputJsonValue,
         createdById: userId,
+        baseSlug: dto.slug,
+        locale: 'en',
+        status: 'draft',
       },
     });
   }
@@ -62,6 +65,9 @@ export class TemplatesService {
           description: true,
           subject: true,
           variables: true,
+          baseSlug: true,
+          locale: true,
+          status: true,
           createdAt: true,
           updatedAt: true,
           createdBy: { select: { id: true, email: true } },

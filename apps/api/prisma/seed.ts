@@ -127,6 +127,9 @@ async function seedTemplates(userId: string) {
         designJson: buildUnlayerDesign(htmlTemplate) as any,
         variables: [],
         createdById: userId,
+        baseSlug: slug,
+        locale: 'en',
+        status: 'draft',
       },
     });
 
