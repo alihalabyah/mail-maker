@@ -15,6 +15,7 @@ import { VariablesPanel } from '@/components/editor/VariablesPanel';
 import { api } from '@/lib/api-client';
 import type { TemplateVariable, ComponentSummary } from '@/types';
 import type { EmailEditorValues, EmailEditorHandle } from '@/components/editor/EmailEditorWrapper';
+import type { JSONTemplate } from '@unlayer/types/editor/design';
 
 const EmailEditorWrapper = dynamic(
   () => import('@/components/editor/EmailEditorWrapper').then((m) => m.EmailEditorWrapper),
@@ -45,6 +46,8 @@ export default function EditTemplatePage() {
   const [showMeta, setShowMeta] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [insertError, setInsertError] = useState<string | null>(null);
+  const [insertingId, setInsertingId] = useState<string | null>(null);
 
   const {
     register,
@@ -97,6 +100,8 @@ export default function EditTemplatePage() {
   });
 
   const handleInsertComponent = async (component: ComponentSummary) => {
+    setInsertingId(component.id);
+    setInsertError(null);
     try {
       const { html: previewHtml } = await api.post<{ html: string }>(
         `/components/${component.id}/preview`,
@@ -126,11 +131,13 @@ export default function EditTemplatePage() {
             rows: [...((body.rows as unknown[]) ?? []), lockedRow],
           },
         };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        editorRef.current?.editor?.loadDesign(updatedDesign as any);
+        editorRef.current?.editor?.loadDesign(updatedDesign as JSONTemplate);
       });
     } catch {
-      // silently fail — the editor remains unchanged
+      setInsertError(`Failed to insert "${component.name}". Please try again.`);
+      setTimeout(() => setInsertError(null), 4000);
+    } finally {
+      setInsertingId(null);
     }
   };
 
@@ -250,6 +257,11 @@ export default function EditTemplatePage() {
                 <p className="text-xs text-gray-400 px-1">
                   Click Add to insert a locked block into the email.
                 </p>
+                {insertError && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1.5">
+                    {insertError}
+                  </p>
+                )}
                 <div className="space-y-2">
                   {components.map((c) => (
                     <div key={c.id} className="flex items-center justify-between gap-2 bg-gray-50 rounded px-2 py-1.5">
@@ -261,9 +273,10 @@ export default function EditTemplatePage() {
                       </div>
                       <button
                         onClick={() => handleInsertComponent(c)}
-                        className="shrink-0 px-2 py-1 text-xs border border-primary text-primary rounded hover:bg-primary-light transition-colors"
+                        disabled={insertingId === c.id}
+                        className="shrink-0 px-2 py-1 text-xs border border-primary text-primary rounded hover:bg-primary-light disabled:opacity-40 transition-colors"
                       >
-                        Add
+                        {insertingId === c.id ? '…' : 'Add'}
                       </button>
                     </div>
                   ))}
