@@ -13,7 +13,8 @@
     "db:migrate": "turbo run db:migrate",
     "db:generate": "turbo run db:generate",
     "db:seed": "turbo run db:seed",
-    "db:studio": "cd apps/api && npx prisma studio"
+    "db:studio": "cd apps/api && npx prisma studio",
+    "tunnel": "bash scripts/tunnel.sh"
   },
   "devDependencies": {
     "turbo": "^2.5.3",
