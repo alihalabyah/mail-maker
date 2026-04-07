@@ -1,5 +1,5 @@
-import { IsObject } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsObject, IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RenderRequestDto {
   @ApiProperty({
@@ -8,4 +8,9 @@ export class RenderRequestDto {
   })
   @IsObject()
   variables: Record<string, unknown>;
+
+  @ApiPropertyOptional({ example: 'en', enum: ['en', 'ar'], default: 'en' })
+  @IsOptional()
+  @IsString()
+  locale?: string;
 }

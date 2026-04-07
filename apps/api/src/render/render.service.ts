@@ -22,26 +22,72 @@ export class RenderService implements OnModuleInit {
     registerStandardHelpers(Handlebars);
   }
 
-  async getTemplate(idOrSlug: string) {
-    const template =
-      (await this.prisma.template.findUnique({ where: { id: idOrSlug } })) ??
-      (await this.prisma.template.findUnique({ where: { slug: idOrSlug } }));
+  async getTemplate(idOrSlug: string, locale = 'en') {
+    // Try by ID first
+    let template = await this.prisma.template.findUnique({
+      where: { id: idOrSlug },
+    });
 
-    if (!template) throw new NotFoundException('Template not found');
-    return template;
+    // Then by baseSlug + locale
+    if (!template) {
+      template = await this.prisma.template.findUnique({
+        where: { baseSlug_locale: { baseSlug: idOrSlug, locale } },
+      });
+    }
+
+    // Legacy: fall back to slug lookup ONLY if using default locale
+    // (don't fall back when locale is explicitly specified)
+    if (!template && locale === 'en') {
+      template = await this.prisma.template.findUnique({
+        where: { slug: idOrSlug },
+      });
+    }
+
+    if (!template)
+      throw new NotFoundException(
+        `Template "${idOrSlug}" not found for locale "${locale}"`,
+      );
+
+    if (!template.currentVersionId) {
+      throw new NotFoundException(
+        `Template "${idOrSlug}" (${locale}) has no published version`,
+      );
+    }
+
+    // Load the published version
+    const version = await this.prisma.templateVersion.findUnique({
+      where: { id: template.currentVersionId },
+    });
+
+    if (!version) throw new NotFoundException('Published version not found');
+
+    return {
+      ...template,
+      htmlTemplate: version.htmlTemplate,
+      subject: version.subject,
+      variables: version.variables,
+      designJson: version.designJson,
+    };
   }
 
-  async render(idOrSlug: string, variables: Record<string, unknown>) {
-    const template = await this.getTemplate(idOrSlug);
+  async render(
+    idOrSlug: string,
+    variables: Record<string, unknown>,
+    locale = 'en',
+  ) {
+    const template = await this.getTemplate(idOrSlug, locale);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const schema = template.variables as unknown as TemplateVariable[];
     const merged = this.mergeWithDefaults(schema, variables);
     this.validateVariables(schema, merged);
 
     const hbs = Handlebars.create();
     registerStandardHelpers(hbs);
-    await this.componentsService.resolvePartials(template.htmlTemplate, merged, hbs);
+    await this.componentsService.resolvePartials(
+      template.htmlTemplate,
+      merged,
+      hbs,
+    );
 
     return {
       html: hbs.compile(template.htmlTemplate)(merged),
@@ -62,7 +108,10 @@ export class RenderService implements OnModuleInit {
     return result;
   }
 
-  private validateVariables(schema: TemplateVariable[], merged: Record<string, unknown>) {
+  private validateVariables(
+    schema: TemplateVariable[],
+    merged: Record<string, unknown>,
+  ) {
     const errors: string[] = [];
     for (const v of schema) {
       if (v.required && merged[v.name] === undefined) {
@@ -70,7 +119,10 @@ export class RenderService implements OnModuleInit {
       }
     }
     if (errors.length > 0) {
-      throw new BadRequestException({ message: 'Missing required variables', errors });
+      throw new BadRequestException({
+        message: 'Missing required variables',
+        errors,
+      });
     }
   }
 }
