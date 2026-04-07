@@ -207,15 +207,6 @@ export default function EditTemplatePage() {
               })}
             </div>
 
-            {/* Publish button */}
-            <button
-              onClick={() => publishMutation.mutate()}
-              disabled={publishMutation.isPending || template.status === 'published'}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-40 transition-colors"
-            >
-              {publishMutation.isPending ? 'Publishing…' : template.status === 'published' ? 'Published' : 'Publish'}
-            </button>
-
             <Link
               href={`/templates/${id}/preview`}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-md hover:bg-gray-50"
@@ -281,13 +272,23 @@ export default function EditTemplatePage() {
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full py-2 bg-primary text-white text-sm rounded hover:bg-primary-dark disabled:opacity-40 transition-colors"
-              >
-                {saving ? 'Saving…' : 'Update Details'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-2 bg-primary text-white text-sm font-medium rounded hover:bg-primary-dark disabled:opacity-40 transition-colors"
+                >
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => publishMutation.mutate()}
+                  disabled={publishMutation.isPending || template.status === 'published'}
+                  className="flex-1 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                >
+                  {publishMutation.isPending ? 'Publishing…' : template.status === 'published' ? 'Published' : 'Publish'}
+                </button>
+              </div>
             </form>
 
             <div className="border-t">
