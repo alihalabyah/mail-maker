@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
-import { useTemplate, useUpdateTemplate } from '@/hooks/useTemplates';
+import { useTemplate, useUpdateTemplate, useTemplates, usePublishTemplate, useTemplateVersions, useRestoreVersion } from '@/hooks/useTemplates';
 import { useComponents } from '@/hooks/useComponents';
 import { Header } from '@/components/layout/Header';
 import { VariablesPanel } from '@/components/editor/VariablesPanel';
@@ -37,7 +37,11 @@ export default function EditTemplatePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: template, isLoading } = useTemplate(id);
+  const { data: allTemplates } = useTemplates();
   const updateMutation = useUpdateTemplate(id);
+  const publishMutation = usePublishTemplate(id);
+  const { data: versions } = useTemplateVersions(id);
+  const restoreMutation = useRestoreVersion(id);
 
   const editorRef = useRef<EmailEditorHandle>(null);
   const { data: components } = useComponents();
@@ -157,6 +161,12 @@ export default function EditTemplatePage() {
     );
   }
 
+  // Find sibling locale template
+  const siblingLocale = template.locale === 'en' ? 'ar' : 'en';
+  const siblingTemplate = allTemplates?.items?.find(
+    (t) => t.baseSlug === template.baseSlug && t.locale === siblingLocale
+  );
+
   // Always pass initialValues so the editor can show existing content.
   // The wrapper checks whether designJson is a real Unlayer design or raw HTML.
   const rawDesign = (template.designJson ?? {}) as Record<string, unknown>;
@@ -172,6 +182,40 @@ export default function EditTemplatePage() {
         actions={
           <div className="flex items-center gap-2">
             {saved && <span className="text-xs text-green-600 font-medium">Saved!</span>}
+
+            {/* Locale tabs */}
+            <div className="flex items-center gap-1 border rounded-md overflow-hidden">
+              {(['en', 'ar'] as const).map((loc) => {
+                const isCurrent = template.locale === loc;
+                const siblingId = loc === siblingLocale ? siblingTemplate?.id : template.id;
+                return isCurrent ? (
+                  <span key={loc} className="px-3 py-1.5 text-xs font-semibold bg-primary text-white uppercase">
+                    {loc}
+                  </span>
+                ) : siblingId ? (
+                  <Link key={loc} href={`/templates/${siblingId}`}
+                    className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 uppercase">
+                    {loc}
+                  </Link>
+                ) : (
+                  <Link key={loc}
+                    href={`/templates/new?baseSlug=${template.baseSlug}&locale=${loc}`}
+                    className="px-3 py-1.5 text-xs text-gray-400 hover:text-primary uppercase">
+                    + {loc}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Publish button */}
+            <button
+              onClick={() => publishMutation.mutate()}
+              disabled={publishMutation.isPending || template.status === 'published'}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-40 transition-colors"
+            >
+              {publishMutation.isPending ? 'Publishing…' : template.status === 'published' ? 'Published' : 'Publish'}
+            </button>
+
             <Link
               href={`/templates/${id}/preview`}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-md hover:bg-gray-50"
@@ -284,6 +328,38 @@ export default function EditTemplatePage() {
                 </div>
               </div>
             )}
+
+            {/* Version History */}
+            {versions && versions.length > 0 && (
+              <div className="border-t pt-4 space-y-2 px-4 pb-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1">
+                  Version History
+                </h3>
+                <div className="space-y-1">
+                  {versions.map((v) => (
+                    <div key={v.id} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-gray-50">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-gray-800">v{v.version}</p>
+                        <p className="text-xs text-gray-400">
+                          {new Date(v.publishedAt).toLocaleDateString()} · {v.publishedBy.email}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Restore v${v.version} to draft?`)) {
+                            restoreMutation.mutate(v.id);
+                          }
+                        }}
+                        disabled={restoreMutation.isPending}
+                        className="shrink-0 px-2 py-1 text-xs border rounded hover:bg-gray-100 disabled:opacity-40"
+                      >
+                        Restore
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </aside>
         )}
 
@@ -293,6 +369,7 @@ export default function EditTemplatePage() {
             initialValues={initialValues}
             onSave={handleEditorSave}
             saving={saving}
+            locale={template.locale as 'en' | 'ar'}
           />
         </div>
       </div>
