@@ -17,6 +17,7 @@ interface EmailEditorWrapperProps {
   initialValues?: EmailEditorValues;
   onSave: (values: EmailEditorValues) => Promise<void>;
   saving?: boolean;
+  locale?: 'en' | 'ar';
 }
 
 /** Returns true only if the object is a real Unlayer design JSON (has a body with rows). */
@@ -80,6 +81,7 @@ function EmailEditorWrapper({
   initialValues,
   onSave,
   saving = false,
+  locale = 'en',
 }: EmailEditorWrapperProps, ref) {
   const editorRef = useRef<EditorRef>(null);
 
@@ -158,6 +160,8 @@ function EmailEditorWrapper({
           onReady={onReady}
           style={{ height: 'calc(100vh - 120px)', minHeight: 500 }}
           options={{
+            locale: locale === 'ar' ? 'ar-AR' : 'en-US',
+            textDirection: locale === 'ar' ? 'rtl' : 'ltr',
             features: { imageEditor: true },
           }}
           onLoad={(editor) => {

@@ -20,10 +20,11 @@ const EmailEditorWrapper = dynamic(
 
 const metaSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  slug: z
+  baseSlug: z
     .string()
     .min(1, 'Slug is required')
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Lowercase, hyphens only'),
+  locale: z.enum(['en', 'ar']),
   description: z.string().optional(),
   subject: z.string().min(1, 'Subject is required'),
 });
@@ -40,8 +41,17 @@ export default function NewTemplatePage() {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
-  } = useForm<MetaForm>({ resolver: zodResolver(metaSchema) });
+  } = useForm<MetaForm>({
+    resolver: zodResolver(metaSchema),
+    defaultValues: {
+      locale: 'en',
+    },
+  });
+
+  const watchLocale = watch('locale', 'en');
 
   const handleEditorSave = async (values: EmailEditorValues) => {
     setEditorValues(values);
@@ -56,7 +66,9 @@ export default function NewTemplatePage() {
     try {
       const template = await createMutation.mutateAsync({
         name: meta.name,
-        slug: meta.slug,
+        slug: meta.baseSlug,
+        baseSlug: meta.baseSlug,
+        locale: meta.locale,
         description: meta.description,
         subject: meta.subject,
         designJson: editorValues.design,
@@ -108,11 +120,31 @@ export default function NewTemplatePage() {
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Slug *</label>
                 <input
-                  {...register('slug')}
+                  {...register('baseSlug')}
                   placeholder="welcome-email"
                   className="w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                 />
-                {errors.slug && <p className="text-xs text-red-600 mt-1">{errors.slug.message}</p>}
+                {errors.baseSlug && <p className="text-xs text-red-600 mt-1">{errors.baseSlug.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Language</label>
+                <div className="flex gap-2">
+                  {(['en', 'ar'] as const).map((loc) => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => setValue('locale', loc)}
+                      className={`px-3 py-1.5 text-xs rounded border font-medium transition-colors ${
+                        watchLocale === loc
+                          ? 'bg-primary text-white border-primary'
+                          : 'bg-white text-gray-600 border-gray-300 hover:border-primary'
+                      }`}
+                    >
+                      {loc === 'en' ? '🇬🇧 English' : '🇦🇪 Arabic'}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -150,7 +182,11 @@ export default function NewTemplatePage() {
         )}
 
         <div className="flex-1 overflow-hidden">
-          <EmailEditorWrapper onSave={handleEditorSave} saving={saving} />
+          <EmailEditorWrapper
+            onSave={handleEditorSave}
+            saving={saving}
+            locale={watchLocale}
+          />
         </div>
       </div>
     </div>
