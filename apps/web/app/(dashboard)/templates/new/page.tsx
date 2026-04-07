@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,11 +32,15 @@ type MetaForm = z.infer<typeof metaSchema>;
 
 export default function NewTemplatePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const createMutation = useCreateTemplate();
   const [variables, setVariables] = useState<TemplateVariable[]>([]);
   const [showMeta, setShowMeta] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editorValues, setEditorValues] = useState<EmailEditorValues | null>(null);
+
+  const defaultBaseSlug = searchParams.get('baseSlug') ?? '';
+  const defaultLocale = (searchParams.get('locale') ?? 'en') as 'en' | 'ar';
 
   const {
     register,
@@ -47,7 +51,8 @@ export default function NewTemplatePage() {
   } = useForm<MetaForm>({
     resolver: zodResolver(metaSchema),
     defaultValues: {
-      locale: 'en',
+      baseSlug: defaultBaseSlug,
+      locale: defaultLocale,
     },
   });
 
