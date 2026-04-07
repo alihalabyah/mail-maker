@@ -20,13 +20,23 @@ export class TemplatesService {
   ) {}
 
   async create(dto: CreateTemplateDto, userId: string) {
-    const existing = await this.prisma.template.findUnique({ where: { slug: dto.slug } });
-    if (existing) throw new ConflictException(`Slug "${dto.slug}" is already in use`);
+    const baseSlug = dto.baseSlug ?? dto.slug;
+    const locale = dto.locale ?? 'en';
+    const slug = locale === 'en' ? baseSlug : `${baseSlug}-${locale}`;
+
+    // Check baseSlug+locale uniqueness
+    const existing = await this.prisma.template.findUnique({
+      where: { baseSlug_locale: { baseSlug, locale } },
+    });
+    if (existing) throw new ConflictException(`A ${locale} version of "${baseSlug}" already exists`);
 
     return this.prisma.template.create({
       data: {
+        slug,
+        baseSlug,
+        locale,
+        status: 'draft',
         name: dto.name,
-        slug: dto.slug,
         description: dto.description,
         subject: dto.subject,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -35,9 +45,6 @@ export class TemplatesService {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         variables: (dto.variables ?? []) as unknown as Prisma.InputJsonValue,
         createdById: userId,
-        baseSlug: dto.slug,
-        locale: 'en',
-        status: 'draft',
       },
     });
   }
@@ -121,6 +128,68 @@ export class TemplatesService {
     const existing = await this.prisma.template.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Template not found');
     await this.prisma.template.delete({ where: { id } });
+  }
+
+  async publish(id: string, userId: string) {
+    const template = await this.prisma.template.findUnique({ where: { id } });
+    if (!template) throw new NotFoundException('Template not found');
+
+    return this.prisma.$transaction(async (tx) => {
+      const lastVersion = await tx.templateVersion.findFirst({
+        where: { templateId: id },
+        orderBy: { version: 'desc' },
+      });
+      const nextVersion = (lastVersion?.version ?? 0) + 1;
+
+      const version = await tx.templateVersion.create({
+        data: {
+          templateId: id,
+          version: nextVersion,
+          htmlTemplate: template.htmlTemplate,
+          designJson: template.designJson as object,
+          subject: template.subject,
+          variables: template.variables as object,
+          publishedById: userId,
+        },
+      });
+
+      return tx.template.update({
+        where: { id },
+        data: { currentVersionId: version.id, status: 'published' },
+      });
+    });
+  }
+
+  async listVersions(id: string) {
+    return this.prisma.templateVersion.findMany({
+      where: { templateId: id },
+      orderBy: { version: 'desc' },
+      select: {
+        id: true,
+        version: true,
+        subject: true,
+        publishedAt: true,
+        publishedBy: { select: { id: true, email: true } },
+      },
+    });
+  }
+
+  async restoreVersion(id: string, versionId: string) {
+    const version = await this.prisma.templateVersion.findFirst({
+      where: { id: versionId, templateId: id },
+    });
+    if (!version) throw new NotFoundException('Version not found');
+
+    return this.prisma.template.update({
+      where: { id },
+      data: {
+        htmlTemplate: version.htmlTemplate,
+        designJson: version.designJson as object,
+        subject: version.subject,
+        variables: version.variables as object,
+        status: 'draft',
+      },
+    });
   }
 
   private stripComponentPreviews(html: string): string {

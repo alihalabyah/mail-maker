@@ -5,6 +5,7 @@ import {
   IsArray,
   ValidateNested,
   Matches,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -14,6 +15,18 @@ export class CreateTemplateDto {
   @ApiProperty({ example: 'Welcome Email' })
   @IsString()
   name: string;
+
+  @ApiPropertyOptional({ example: 'welcome-email' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, { message: 'Lowercase, hyphens only' })
+  baseSlug?: string;
+
+  @ApiPropertyOptional({ example: 'en', enum: ['en', 'ar'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['en', 'ar'], { message: 'locale must be either "en" or "ar"' })
+  locale?: string;
 
   @ApiProperty({ example: 'welcome-email', description: 'URL-safe slug (lowercase, hyphens only)' })
   @IsString()
