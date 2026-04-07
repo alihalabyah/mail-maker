@@ -11,7 +11,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '@prisma/client';
@@ -56,7 +61,9 @@ export class TemplatesController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a template by ID (includes designJson for editor)' })
+  @ApiOperation({
+    summary: 'Get a template by ID (includes designJson for editor)',
+  })
   findOne(@Param('id') id: string) {
     return this.templatesService.findOne(id);
   }
@@ -68,7 +75,9 @@ export class TemplatesController {
   }
 
   @Post(':id/preview')
-  @ApiOperation({ summary: 'Preview a rendered template (JWT auth, for the UI)' })
+  @ApiOperation({
+    summary: 'Preview a rendered template (JWT auth, for the UI)',
+  })
   async preview(@Param('id') id: string, @Body() dto: RenderRequestDto) {
     const template = await this.templatesService.findOne(id);
     return await this.templatesService.preview(template, dto.variables);
@@ -76,10 +85,15 @@ export class TemplatesController {
 
   @Post(':id/send-test')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Render and send a test email (JWT auth, for the UI)' })
+  @ApiOperation({
+    summary: 'Render and send a test email (JWT auth, for the UI)',
+  })
   async sendTest(@Param('id') id: string, @Body() dto: SendTestDto) {
     const template = await this.templatesService.findOne(id);
-    const { html, subject } = await this.templatesService.preview(template, dto.variables ?? {});
+    const { html, subject } = await this.templatesService.preview(
+      template,
+      dto.variables ?? {},
+    );
     await this.mailerService.sendMail({ to: dto.to, subject, html });
     return { ok: true, to: dto.to, subject };
   }
@@ -89,5 +103,25 @@ export class TemplatesController {
   @ApiOperation({ summary: 'Delete a template' })
   remove(@Param('id') id: string) {
     return this.templatesService.remove(id);
+  }
+
+  @Post(':id/publish')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Publish current draft as a new version' })
+  publish(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.templatesService.publish(id, user.id);
+  }
+
+  @Get(':id/versions')
+  @ApiOperation({ summary: 'List all published versions for a template' })
+  listVersions(@Param('id') id: string) {
+    return this.templatesService.listVersions(id);
+  }
+
+  @Post(':id/versions/:versionId/restore')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Restore a version back to draft' })
+  restoreVersion(@Param('id') id: string, @Param('versionId') versionId: string) {
+    return this.templatesService.restoreVersion(id, versionId);
   }
 }

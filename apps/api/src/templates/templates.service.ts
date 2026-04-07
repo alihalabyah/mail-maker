@@ -28,7 +28,10 @@ export class TemplatesService {
     const existing = await this.prisma.template.findUnique({
       where: { baseSlug_locale: { baseSlug, locale } },
     });
-    if (existing) throw new ConflictException(`A ${locale} version of "${baseSlug}" already exists`);
+    if (existing)
+      throw new ConflictException(
+        `A ${locale} version of "${baseSlug}" already exists`,
+      );
 
     return this.prisma.template.create({
       data: {
@@ -39,10 +42,10 @@ export class TemplatesService {
         name: dto.name,
         description: dto.description,
         subject: dto.subject,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
         designJson: dto.designJson as unknown as Prisma.InputJsonValue,
         htmlTemplate: this.stripComponentPreviews(dto.htmlTemplate),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
         variables: (dto.variables ?? []) as unknown as Prisma.InputJsonValue,
         createdById: userId,
       },
@@ -89,7 +92,9 @@ export class TemplatesService {
   async findOne(id: string) {
     const template = await this.prisma.template.findUnique({ where: { id } });
     if (!template) throw new NotFoundException('Template not found');
-    const refreshedDesignJson = await this.refreshComponentPreviews(template.designJson);
+    const refreshedDesignJson = await this.refreshComponentPreviews(
+      template.designJson,
+    );
     return { ...template, designJson: refreshedDesignJson };
   }
 
@@ -101,7 +106,8 @@ export class TemplatesService {
       const conflict = await this.prisma.template.findFirst({
         where: { slug: dto.slug, NOT: { id } },
       });
-      if (conflict) throw new ConflictException(`Slug "${dto.slug}" is already in use`);
+      if (conflict)
+        throw new ConflictException(`Slug "${dto.slug}" is already in use`);
     }
 
     return this.prisma.template.update({
@@ -112,12 +118,12 @@ export class TemplatesService {
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.subject && { subject: dto.subject }),
         ...(dto.designJson && {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           designJson: dto.designJson as unknown as Prisma.InputJsonValue,
         }),
-        ...(dto.htmlTemplate !== undefined && { htmlTemplate: this.stripComponentPreviews(dto.htmlTemplate) }),
+        ...(dto.htmlTemplate !== undefined && {
+          htmlTemplate: this.stripComponentPreviews(dto.htmlTemplate),
+        }),
         ...(dto.variables && {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           variables: dto.variables as unknown as Prisma.InputJsonValue,
         }),
       },
@@ -161,6 +167,9 @@ export class TemplatesService {
   }
 
   async listVersions(id: string) {
+    const template = await this.prisma.template.findUnique({ where: { id } });
+    if (!template) throw new NotFoundException('Template not found');
+
     return this.prisma.templateVersion.findMany({
       where: { templateId: id },
       orderBy: { version: 'desc' },
@@ -199,7 +208,9 @@ export class TemplatesService {
     );
   }
 
-  private async refreshComponentPreviews(designJson: Prisma.JsonValue): Promise<Prisma.JsonValue> {
+  private async refreshComponentPreviews(
+    designJson: Prisma.JsonValue,
+  ): Promise<Prisma.JsonValue> {
     const design = designJson as Record<string, unknown>;
     const body = design?.body as Record<string, unknown> | undefined;
     const rows = body?.rows as Array<Record<string, unknown>> | undefined;
@@ -213,7 +224,9 @@ export class TemplatesService {
       if (!columns) continue;
 
       for (const col of columns) {
-        const contents = col.contents as Array<Record<string, unknown>> | undefined;
+        const contents = col.contents as
+          | Array<Record<string, unknown>>
+          | undefined;
         if (!contents) continue;
 
         for (const block of contents) {
@@ -226,7 +239,9 @@ export class TemplatesService {
           if (!match) continue;
           const slug = match[1];
 
-          const component = await this.prisma.component.findUnique({ where: { slug } });
+          const component = await this.prisma.component.findUnique({
+            where: { slug },
+          });
           if (!component) continue;
 
           // Use only the component's own default variables for the editor preview.
@@ -259,7 +274,11 @@ export class TemplatesService {
 
     const hbs = Handlebars.create();
     registerStandardHelpers(hbs);
-    await this.componentsService.resolvePartials(template.htmlTemplate, merged, hbs);
+    await this.componentsService.resolvePartials(
+      template.htmlTemplate,
+      merged,
+      hbs,
+    );
 
     return {
       html: hbs.compile(template.htmlTemplate)(merged),
