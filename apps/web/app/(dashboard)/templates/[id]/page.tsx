@@ -159,8 +159,9 @@ export default function EditTemplatePage() {
 
   // Always pass initialValues so the editor can show existing content.
   // The wrapper checks whether designJson is a real Unlayer design or raw HTML.
+  const rawDesign = (template.designJson ?? {}) as Record<string, unknown>;
   const initialValues: EmailEditorValues = {
-    design: (template.designJson ?? {}) as Record<string, unknown>,
+    design: 'body' in rawDesign ? rawDesign : { schemaVersion: 3, body: { rows: [], values: {} } },
     html: template.htmlTemplate,
   };
 

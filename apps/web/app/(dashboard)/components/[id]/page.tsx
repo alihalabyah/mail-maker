@@ -104,8 +104,9 @@ export default function EditComponentPage() {
     );
   }
 
+  const rawDesign = (component.designJson ?? {}) as Record<string, unknown>;
   const initialValues: EmailEditorValues = {
-    design: (component.designJson ?? {}) as Record<string, unknown>,
+    design: 'body' in rawDesign ? rawDesign : { schemaVersion: 3, body: { rows: [], values: {} } },
     html: component.htmlTemplate,
   };
 

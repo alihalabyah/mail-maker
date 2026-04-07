@@ -48,7 +48,7 @@ export default function NewComponentPage() {
         name: meta.name,
         slug: meta.slug,
         description: meta.description,
-        designJson: {},
+        designJson: { schemaVersion: 3, body: { rows: [], values: {} } },
         htmlTemplate: '',
         variables: [],
       });
