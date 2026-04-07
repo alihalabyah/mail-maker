@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import type { Template, TemplateSummary, PaginatedResponse } from "@/types";
+import type { Template, TemplateSummary, PaginatedResponse, TemplateVersion } from "@/types";
 
 const TEMPLATES_KEY = "templates";
 
@@ -55,5 +55,36 @@ export function useDeleteTemplate() {
   return useMutation({
     mutationFn: (id: string) => api.delete<void>(`/templates/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: [TEMPLATES_KEY] }),
+  });
+}
+
+export function usePublishTemplate(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<Template>(`/templates/${id}/publish`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [TEMPLATES_KEY] });
+      qc.invalidateQueries({ queryKey: [TEMPLATES_KEY, id] });
+    },
+  });
+}
+
+export function useTemplateVersions(id: string) {
+  return useQuery<TemplateVersion[]>({
+    queryKey: [TEMPLATES_KEY, id, 'versions'],
+    queryFn: () => api.get<TemplateVersion[]>(`/templates/${id}/versions`),
+    enabled: !!id,
+  });
+}
+
+export function useRestoreVersion(templateId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (versionId: string) =>
+      api.post<Template>(`/templates/${templateId}/versions/${versionId}/restore`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [TEMPLATES_KEY, templateId] });
+      qc.invalidateQueries({ queryKey: [TEMPLATES_KEY, templateId, 'versions'] });
+    },
   });
 }

@@ -11,6 +11,10 @@ export { ApiKeyScope, Role } from "@mail-maker/shared";
 export interface Template {
   id: string;
   slug: string;
+  baseSlug: string;          // new
+  locale: string;            // new — "en" | "ar"
+  status: string;            // new — "draft" | "published"
+  currentVersionId?: string; // new
   name: string;
   description?: string;
   subject: string;
@@ -19,6 +23,14 @@ export interface Template {
   variables: import("@mail-maker/shared").TemplateVariable[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TemplateVersion {
+  id: string;
+  version: number;
+  subject: string;
+  publishedAt: string;
+  publishedBy: { id: string; email: string };
 }
 
 export interface Component {
