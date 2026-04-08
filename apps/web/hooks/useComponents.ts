@@ -50,3 +50,11 @@ export function useDeleteComponent() {
     onSuccess: () => qc.invalidateQueries({ queryKey: [COMPONENTS_KEY] }),
   });
 }
+
+export function useDuplicateComponent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<Component>(`/components/${id}/duplicate`, {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [COMPONENTS_KEY] }),
+  });
+}

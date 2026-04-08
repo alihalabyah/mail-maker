@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -46,12 +57,25 @@ export class ComponentsController {
     return this.componentsService.remove(id);
   }
 
+  @Post(':id/duplicate')
+  @ApiOperation({ summary: 'Duplicate a component' })
+  duplicate(@Param('id') id: string) {
+    return this.componentsService.duplicate(id);
+  }
+
   @Post(':id/preview')
   @ApiOperation({ summary: 'Preview rendered component HTML' })
   async preview(@Param('id') id: string, @Body() dto: RenderRequestDto) {
     const component = await this.componentsService.findOne(id);
-    const hbs = await this.componentsService.resolvePartials(component.htmlTemplate, dto.variables);
-    const html = this.componentsService.renderHtml(component, dto.variables, hbs);
+    const hbs = await this.componentsService.resolvePartials(
+      component.htmlTemplate,
+      dto.variables,
+    );
+    const html = this.componentsService.renderHtml(
+      component,
+      dto.variables,
+      hbs,
+    );
     return { html };
   }
 }

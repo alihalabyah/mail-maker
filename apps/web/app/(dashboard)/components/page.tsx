@@ -1,18 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { useComponents, useDeleteComponent } from "@/hooks/useComponents";
+import { Plus, Pencil, Trash2, Copy } from "lucide-react";
+import { useComponents, useDeleteComponent, useDuplicateComponent } from "@/hooks/useComponents";
 import { Header } from "@/components/layout/Header";
 import type { ComponentSummary } from "@/types";
 
 export default function ComponentsPage() {
   const { data, isLoading } = useComponents();
   const deleteMutation = useDeleteComponent();
+  const duplicateMutation = useDuplicateComponent();
 
   const handleDelete = async (c: ComponentSummary) => {
     if (!confirm(`Delete "${c.name}"? This cannot be undone.`)) return;
     await deleteMutation.mutateAsync(c.id);
+  };
+
+  const handleDuplicate = async (c: ComponentSummary) => {
+    const result = await duplicateMutation.mutateAsync(c.id);
+    // Navigate to the duplicated component
+    window.location.href = `/components/${result.id}`;
   };
 
   return (
@@ -77,8 +84,16 @@ export default function ComponentsPage() {
                           <Pencil className="w-4 h-4" />
                         </Link>
                         <button
+                          onClick={() => handleDuplicate(c)}
+                          disabled={duplicateMutation.isPending}
+                          className="p-1.5 text-gray-400 hover:text-primary rounded disabled:opacity-40"
+                          title="Duplicate"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleDelete(c)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                          className="p1.5 text-gray-400 hover:text-red-600 rounded"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />

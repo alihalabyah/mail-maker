@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as Handlebars from 'handlebars';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,8 +15,11 @@ export class ComponentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateComponentDto, userId: string) {
-    const existing = await this.prisma.component.findUnique({ where: { slug: dto.slug } });
-    if (existing) throw new ConflictException(`Slug "${dto.slug}" is already in use`);
+    const existing = await this.prisma.component.findUnique({
+      where: { slug: dto.slug },
+    });
+    if (existing)
+      throw new ConflictException(`Slug "${dto.slug}" is already in use`);
     return this.prisma.component.create({
       data: {
         slug: dto.slug,
@@ -30,8 +37,13 @@ export class ComponentsService {
     return this.prisma.component.findMany({
       orderBy: { updatedAt: 'desc' },
       select: {
-        id: true, slug: true, name: true, description: true,
-        variables: true, createdAt: true, updatedAt: true,
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        variables: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
   }
@@ -45,8 +57,11 @@ export class ComponentsService {
   async update(id: string, dto: UpdateComponentDto) {
     await this.findOne(id);
     if (dto.slug) {
-      const conflict = await this.prisma.component.findFirst({ where: { slug: dto.slug, NOT: { id } } });
-      if (conflict) throw new ConflictException(`Slug "${dto.slug}" is already in use`);
+      const conflict = await this.prisma.component.findFirst({
+        where: { slug: dto.slug, NOT: { id } },
+      });
+      if (conflict)
+        throw new ConflictException(`Slug "${dto.slug}" is already in use`);
     }
     return this.prisma.component.update({
       where: { id },
@@ -54,16 +69,59 @@ export class ComponentsService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.slug !== undefined && { slug: dto.slug }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.designJson !== undefined && { designJson: dto.designJson as unknown as Prisma.InputJsonValue }),
-        ...(dto.htmlTemplate !== undefined && { htmlTemplate: dto.htmlTemplate }),
-        ...(dto.variables !== undefined && { variables: dto.variables as unknown as Prisma.InputJsonValue }),
+        ...(dto.designJson !== undefined && {
+          designJson: dto.designJson as unknown as Prisma.InputJsonValue,
+        }),
+        ...(dto.htmlTemplate !== undefined && {
+          htmlTemplate: dto.htmlTemplate,
+        }),
+        ...(dto.variables !== undefined && {
+          variables: dto.variables as unknown as Prisma.InputJsonValue,
+        }),
       },
     });
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const component = await this.findOne(id);
+
+    // Check if component is used in any template
+    const templates = await this.prisma.template.findMany({
+      select: { id: true, name: true, htmlTemplate: true },
+    });
+
+    for (const template of templates) {
+      if (template.htmlTemplate.includes(`<!-- component:${component.slug} -->`)) {
+        throw new ConflictException(
+          `Cannot delete component "${component.name}" - it is used in template "${template.name}"`,
+        );
+      }
+    }
+
     await this.prisma.component.delete({ where: { id } });
+  }
+
+  async duplicate(id: string) {
+    const component = await this.findOne(id);
+
+    // Generate a unique slug by appending "-copy"
+    let counter = 1;
+    let newSlug = `${component.slug}-copy`;
+    while (await this.prisma.component.findUnique({ where: { slug: newSlug } })) {
+      counter++;
+      newSlug = `${component.slug}-copy-${counter}`;
+    }
+
+    return this.prisma.component.create({
+      data: {
+        slug: newSlug,
+        name: `${component.name} (Copy)`,
+        description: component.description,
+        designJson: component.designJson as object,
+        htmlTemplate: component.htmlTemplate,
+        variables: component.variables as object,
+      },
+    });
   }
 
   /** Render component HTML with default variables applied. */
@@ -93,9 +151,13 @@ export class ComponentsService {
     hbs?: typeof Handlebars,
   ): Promise<typeof Handlebars> {
     const instance = hbs ?? Handlebars.create();
-    const slugs = [...htmlTemplate.matchAll(/\{\{>\s*([a-z0-9-]+)\s*\}\}/g)].map(m => m[1]);
+    const slugs = [
+      ...htmlTemplate.matchAll(/\{\{>\s*([a-z0-9-]+)\s*\}\}/g),
+    ].map((m) => m[1]);
     if (slugs.length > 0) {
-      const components = await this.prisma.component.findMany({ where: { slug: { in: slugs } } });
+      const components = await this.prisma.component.findMany({
+        where: { slug: { in: slugs } },
+      });
       for (const c of components) {
         const rendered = this.renderHtml(c, variables, instance);
         instance.registerPartial(c.slug, rendered);

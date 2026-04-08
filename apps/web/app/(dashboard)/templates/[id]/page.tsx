@@ -126,7 +126,7 @@ export default function EditTemplatePage() {
           }],
           values: {},
         }],
-        values: { locked: true },
+        values: { locked: true, paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
       };
 
       editorRef.current?.editor?.saveDesign((design) => {
