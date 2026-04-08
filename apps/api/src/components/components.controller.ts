@@ -59,8 +59,8 @@ export class ComponentsController {
 
   @Post(':id/duplicate')
   @ApiOperation({ summary: 'Duplicate a component' })
-  duplicate(@Param('id') id: string) {
-    return this.componentsService.duplicate(id);
+  duplicate(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.componentsService.duplicate(id, user.id);
   }
 
   @Post(':id/preview')

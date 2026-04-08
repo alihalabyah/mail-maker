@@ -53,6 +53,9 @@ export default function EditTemplatePage() {
   const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
   const [insertError, setInsertError] = useState<string | null>(null);
   const [insertingId, setInsertingId] = useState<string | null>(null);
+  const [refreshedDesign, setRefreshedDesign] = useState<JSONTemplate | null>(null);
+  const [editorKey, setEditorKey] = useState(0);
+  const hasRefreshed = useRef(false);
 
   const {
     register,
@@ -70,8 +73,27 @@ export default function EditTemplatePage() {
         subject: template.subject,
       });
       setVariables(template.variables as TemplateVariable[]);
+
+      // Refresh shared components when template changes
+      const rawDesign = (template.designJson ?? {}) as Record<string, unknown>;
+      if ('body' in rawDesign) {
+        console.log('[Template] Refreshing shared components...');
+        refreshSharedComponents(rawDesign as JSONTemplate)
+          .then((design) => {
+            console.log('[Template] Components refreshed successfully');
+            setRefreshedDesign(design);
+            setEditorKey(prev => prev + 1); // Force editor remount
+          })
+          .catch((err) => {
+            console.error('[Template] Failed to refresh components:', err);
+            setRefreshedDesign(rawDesign as JSONTemplate);
+          });
+      } else {
+        setRefreshedDesign(rawDesign as JSONTemplate);
+      }
     }
-  }, [template, reset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [template?.id]); // Only re-run when template ID changes
 
   const handleEditorSave = async (values: EmailEditorValues) => {
     setSaving(true);
@@ -106,6 +128,120 @@ export default function EditTemplatePage() {
     }
   });
 
+  const refreshSharedComponents = async (design: JSONTemplate): Promise<JSONTemplate> => {
+    const body = design.body as Record<string, unknown>;
+    const rows = (body.rows as unknown[]) ?? [];
+
+    console.log('[refreshSharedComponents] Starting refresh, rows count:', rows.length);
+
+    if (rows.length === 0) {
+      console.log('[refreshSharedComponents] No rows found, returning original design');
+      return design;
+    }
+
+    // Find all component slugs in the design
+    const componentSlugs = new Set<string>();
+    for (const row of rows) {
+      const r = row as Record<string, unknown>;
+      const columns = r.columns as unknown[] ?? [];
+      for (const column of columns) {
+        const col = column as Record<string, unknown>;
+        const contents = col.contents as unknown[] ?? [];
+        for (const content of contents) {
+          const c = content as Record<string, unknown>;
+          if (c.type === 'html') {
+            const values = c.values as Record<string, unknown>;
+            const html = values.html as string ?? '';
+            const matches = html.matchAll(/<!-- component:([a-z0-9-]+) -->/g);
+            for (const match of matches) {
+              componentSlugs.add(match[1]);
+            }
+          }
+        }
+      }
+    }
+
+    console.log('[refreshSharedComponents] Found component slugs:', Array.from(componentSlugs));
+
+    if (componentSlugs.size === 0) {
+      console.log('[refreshSharedComponents] No shared components found in design');
+      return design;
+    }
+
+    // Fetch fresh HTML for each component
+    const componentMap = new Map<string, string>();
+    for (const slug of Array.from(componentSlugs)) {
+      try {
+        // Find component by slug
+        const component = components?.find(c => c.slug === slug);
+        if (!component) {
+          console.warn(`[refreshSharedComponents] Component not found for slug: ${slug}`);
+          continue;
+        }
+
+        console.log(`[refreshSharedComponents] Fetching fresh HTML for: ${slug} (${component.id})`);
+        const { html: previewHtml } = await api.post<{ html: string }>(
+          `/components/${component.id}/preview`,
+          { variables: {} },
+        );
+        componentMap.set(slug, previewHtml);
+        console.log(`[refreshSharedComponents] Successfully fetched HTML for: ${slug}, length: ${previewHtml.length}`);
+      } catch (err) {
+        console.error(`[refreshSharedComponents] Failed to refresh component: ${slug}`, err);
+      }
+    }
+
+    console.log('[refreshSharedComponents] Fetched fresh HTML for components:', Array.from(componentMap.keys()));
+
+    if (componentMap.size === 0) {
+      console.log('[refreshSharedComponents] No components were successfully refreshed');
+      return design;
+    }
+
+    // Update rows with fresh component HTML
+    const updatedRows = rows.map((row) => {
+      const r = row as Record<string, unknown>;
+      const columns = (r.columns as unknown[])?.map((column) => {
+        const col = column as Record<string, unknown>;
+        const contents = (col.contents as unknown[])?.map((content) => {
+          const c = content as Record<string, unknown>;
+          if (c.type === 'html') {
+            const values = c.values as Record<string, unknown>;
+            let html = values.html as string ?? '';
+
+            // Replace component HTML with fresh version
+            for (const [slug, freshHtml] of componentMap.entries()) {
+              const regex = new RegExp(
+                `<!-- component:${slug} -->([\\s\\S]*?)<!-- /component:${slug} -->`,
+                'g'
+              );
+              const matchCount = (html.match(regex) || []).length;
+              if (matchCount > 0) {
+                console.log(`[refreshSharedComponents] Replacing HTML for ${slug}, found ${matchCount} occurrence(s)`);
+                html = html.replace(regex, `<!-- component:${slug} -->${freshHtml}<!-- /component:${slug} -->`);
+              }
+            }
+
+            return { ...c, values: { ...values, html } };
+          }
+          return content;
+        });
+        return { ...col, contents };
+      });
+      return { ...r, columns };
+    });
+
+    console.log('[refreshSharedComponents] Successfully updated design with fresh component HTML');
+
+    return {
+      ...design,
+      body: {
+        ...body,
+        rows: updatedRows,
+      },
+    };
+  };
+
   const handleInsertComponent = async (component: ComponentSummary) => {
     setInsertingId(component.id);
     setInsertError(null);
@@ -115,7 +251,7 @@ export default function EditTemplatePage() {
         { variables: {} },
       );
 
-      const lockedRow = {
+      const componentRow = {
         cells: [1],
         columns: [{
           contents: [{
@@ -126,7 +262,7 @@ export default function EditTemplatePage() {
           }],
           values: {},
         }],
-        values: { locked: true, paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 },
+        values: {},
       };
 
       editorRef.current?.editor?.saveDesign((design) => {
@@ -135,7 +271,7 @@ export default function EditTemplatePage() {
           ...design,
           body: {
             ...body,
-            rows: [...((body.rows as unknown[]) ?? []), lockedRow],
+            rows: [...((body.rows as unknown[]) ?? []), componentRow],
           },
         };
         editorRef.current?.editor?.loadDesign(updatedDesign as JSONTemplate);
@@ -172,9 +308,9 @@ export default function EditTemplatePage() {
 
   // Always pass initialValues so the editor can show existing content.
   // The wrapper checks whether designJson is a real Unlayer design or raw HTML.
-  const rawDesign = (template.designJson ?? {}) as Record<string, unknown>;
+  const designToUse = refreshedDesign ?? (template.designJson ?? {}) as Record<string, unknown>;
   const initialValues: EmailEditorValues = {
-    design: 'body' in rawDesign ? rawDesign : { schemaVersion: 3, body: { rows: [], values: {} } },
+    design: 'body' in designToUse ? designToUse : { schemaVersion: 3, body: { rows: [], values: {} } },
     html: template.htmlTemplate,
   };
 
@@ -373,6 +509,7 @@ export default function EditTemplatePage() {
 
         <div className="flex-1 overflow-hidden">
           <EmailEditorWrapper
+            key={editorKey}
             ref={editorRef}
             initialValues={initialValues}
             onSave={handleEditorSave}

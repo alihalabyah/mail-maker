@@ -101,7 +101,7 @@ export class ComponentsService {
     await this.prisma.component.delete({ where: { id } });
   }
 
-  async duplicate(id: string) {
+  async duplicate(id: string, userId: string) {
     const component = await this.findOne(id);
 
     // Generate a unique slug by appending "-copy"
@@ -120,6 +120,7 @@ export class ComponentsService {
         designJson: component.designJson as object,
         htmlTemplate: component.htmlTemplate,
         variables: component.variables as object,
+        createdById: userId,
       },
     });
   }
