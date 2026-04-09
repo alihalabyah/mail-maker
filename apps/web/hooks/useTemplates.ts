@@ -6,13 +6,14 @@ import type { Template, TemplateSummary, PaginatedResponse, TemplateVersion } fr
 
 const TEMPLATES_KEY = "templates";
 
-export function useTemplates(search?: string, page = 1) {
+export function useTemplates(search?: string, page = 1, domainId?: string) {
   const params = new URLSearchParams();
   if (search) params.set("search", search);
   params.set("page", String(page));
+  if (domainId) params.set("domainId", domainId);
 
   return useQuery<PaginatedResponse<TemplateSummary>>({
-    queryKey: [TEMPLATES_KEY, search, page],
+    queryKey: [TEMPLATES_KEY, search, page, domainId],
     queryFn: () =>
       api.get<PaginatedResponse<TemplateSummary>>(
         `/templates?${params.toString()}`,
@@ -93,6 +94,17 @@ export function useRestoreVersion(templateId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [TEMPLATES_KEY, templateId] });
       qc.invalidateQueries({ queryKey: [TEMPLATES_KEY, templateId, 'versions'] });
+    },
+  });
+}
+
+export function useCopyTemplateToDomain() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, targetDomainId }: { id: string; targetDomainId: string }) =>
+      api.post<Template>(`/templates/${id}/copy-to-domain`, { targetDomainId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [TEMPLATES_KEY] });
     },
   });
 }

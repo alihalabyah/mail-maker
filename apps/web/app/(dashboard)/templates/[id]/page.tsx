@@ -228,8 +228,10 @@ export default function EditTemplatePage() {
         });
         return { ...col, contents };
       });
-      return { ...r, columns };
-    });
+      // Mutate the original row to preserve all properties
+      (r as Record<string, unknown>).columns = columns;
+      return row;
+    }) as unknown as typeof rows;
 
     console.log('[refreshSharedComponents] Successfully updated design with fresh component HTML');
 
@@ -239,7 +241,7 @@ export default function EditTemplatePage() {
         ...body,
         rows: updatedRows,
       },
-    };
+    } as JSONTemplate;
   };
 
   const handleInsertComponent = async (component: ComponentSummary) => {

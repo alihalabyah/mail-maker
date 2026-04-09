@@ -6,10 +6,16 @@ import type { Component, ComponentSummary } from "@/types";
 
 const COMPONENTS_KEY = "components";
 
-export function useComponents() {
+export function useComponents(domainId?: string) {
+  const params = new URLSearchParams();
+  if (domainId) params.set("domainId", domainId);
+
   return useQuery<ComponentSummary[]>({
-    queryKey: [COMPONENTS_KEY],
-    queryFn: () => api.get<ComponentSummary[]>("/components"),
+    queryKey: [COMPONENTS_KEY, domainId],
+    queryFn: () =>
+      api.get<ComponentSummary[]>(
+        `/components${params.toString() ? `?${params.toString()}` : ''}`,
+      ),
     staleTime: 0,
   });
 }
@@ -56,5 +62,16 @@ export function useDuplicateComponent() {
   return useMutation({
     mutationFn: (id: string) => api.post<Component>(`/components/${id}/duplicate`, {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: [COMPONENTS_KEY] }),
+  });
+}
+
+export function useCopyComponentToDomain() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, targetDomainId }: { id: string; targetDomainId: string }) =>
+      api.post<Component>(`/components/${id}/copy-to-domain`, { targetDomainId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [COMPONENTS_KEY] });
+    },
   });
 }
