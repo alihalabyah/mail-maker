@@ -34,8 +34,6 @@ async function main() {
         currentVersionId: version.id,
       },
     });
-
-    console.log(`  ✓ ${t.slug} → baseSlug="${baseSlug}" locale="${locale}" v1 created`);
   }
 
   console.log('Done.');

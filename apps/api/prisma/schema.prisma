@@ -32,6 +32,19 @@ model User {
   components        Component[]
 }
 
+model Domain {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  templates   Template[]
+  components  Component[]
+}
+
 model Template {
   id               String            @id @default(cuid())
   slug             String            @unique   // kept for backwards compat, derived as baseSlug[-locale]
@@ -51,8 +64,10 @@ model Template {
   updatedAt        DateTime          @updatedAt
   createdById      String
   createdBy        User              @relation(fields: [createdById], references: [id])
+  domainId         String?
+  domain           Domain?           @relation(fields: [domainId], references: [id])
 
-  @@unique([baseSlug, locale])
+  @@unique([baseSlug, locale, domainId])
 }
 
 model TemplateVersion {
@@ -76,7 +91,7 @@ model TemplateVersion {
 
 model Component {
   id           String   @id @default(cuid())
-  slug         String   @unique
+  slug         String
   name         String
   description  String?
   designJson   Json
@@ -87,6 +102,10 @@ model Component {
 
   createdById  String
   createdBy    User     @relation(fields: [createdById], references: [id])
+  domainId     String?
+  domain       Domain?  @relation(fields: [domainId], references: [id])
+
+  @@unique([slug, domainId])
 }
 
 model ApiKey {
