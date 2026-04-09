@@ -58,6 +58,65 @@ export const api = {
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
   upload: <T>(path: string, formData: FormData) =>
     request<T>(path, { method: "POST", body: formData }),
+  // Export/import methods
+  async exportTemplate(id: string): Promise<Blob> {
+    const token = getToken();
+    const response = await fetch(`${BASE_URL}/export-import/templates/${id}/export`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) throw new ApiError(response.status, 'Export failed');
+    return response.blob();
+  },
+  async exportComponent(id: string): Promise<Blob> {
+    const token = getToken();
+    const response = await fetch(`${BASE_URL}/export-import/components/${id}/export`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) throw new ApiError(response.status, 'Export failed');
+    return response.blob();
+  },
+  async importTemplate(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = getToken();
+    const response = await fetch(`${BASE_URL}/export-import/templates/import`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!response.ok) {
+      let body: unknown;
+      try {
+        body = await response.json();
+      } catch {
+        body = null;
+      }
+      const message = (body as { message?: string })?.message ?? `HTTP ${response.status}`;
+      throw new ApiError(response.status, message, body);
+    }
+    return response.json() as Promise<{ action: 'created' | 'updated'; id: string; name: string; slug: string }>;
+  },
+  async importComponent(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = getToken();
+    const response = await fetch(`${BASE_URL}/export-import/components/import`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!response.ok) {
+      let body: unknown;
+      try {
+        body = await response.json();
+      } catch {
+        body = null;
+      }
+      const message = (body as { message?: string })?.message ?? `HTTP ${response.status}`;
+      throw new ApiError(response.status, message, body);
+    }
+    return response.json() as Promise<{ action: 'created' | 'updated'; id: string; name: string; slug: string }>;
+  },
 };
 
 export { ApiError };

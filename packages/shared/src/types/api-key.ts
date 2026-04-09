@@ -12,4 +12,8 @@ export interface ApiKeySummary {
   lastUsedAt?: string;
   expiresAt?: string;
   createdAt: string;
+  domain?: {
+    id: string;
+    name: string;
+  };
 }

@@ -7,6 +7,16 @@ export type {
 } from "@mail-maker/shared";
 export { ApiKeyScope, Role } from "@mail-maker/shared";
 
+export interface Domain {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Extend TemplateSummary with locale/status fields
 // The shared package will be updated separately, but we need these fields now
 export interface TemplateSummary {
@@ -21,6 +31,7 @@ export interface TemplateSummary {
   variables: import("@mail-maker/shared").TemplateVariable[];
   createdAt: string;
   updatedAt: string;
+  domain?: { id: string; name: string };
 }
 
 export interface Template {
@@ -68,6 +79,7 @@ export interface ComponentSummary {
   variables: import("@mail-maker/shared").TemplateVariable[];
   createdAt: string;
   updatedAt: string;
+  domain?: { id: string; name: string };
 }
 
 export interface PaginatedResponse<T> {
