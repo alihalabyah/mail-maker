@@ -47,7 +47,7 @@ model Domain {
 
 model Template {
   id               String            @id @default(cuid())
-  slug             String            @unique   // kept for backwards compat, derived as baseSlug[-locale]
+  slug             String            // kept for backwards compat, derived as baseSlug[-locale]
   baseSlug         String
   locale           String            @default("en")
   status           String            @default("draft")  // "draft" | "published"
