@@ -9,6 +9,14 @@ export class RenderRequestDto {
   @IsObject()
   variables: Record<string, unknown>;
 
+  @ApiProperty({
+    example: 'prod',
+    description: 'Domain slug to render template from (e.g., prod, uat, dev)',
+    required: true
+  })
+  @IsString()
+  domainSlug: string;
+
   @ApiPropertyOptional({ example: 'en', enum: ['en', 'ar'], default: 'en' })
   @IsOptional()
   @IsString()

@@ -22,30 +22,37 @@ export class RenderService implements OnModuleInit {
     registerStandardHelpers(Handlebars);
   }
 
-  async getTemplate(idOrSlug: string, locale = 'en') {
-    // Try by ID first
-    let template = await this.prisma.template.findUnique({
-      where: { id: idOrSlug },
-    });
-
-    // Then by baseSlug + locale
-    if (!template) {
-      template = await this.prisma.template.findUnique({
-        where: { baseSlug_locale: { baseSlug: idOrSlug, locale } },
-      });
+  async getTemplate(idOrSlug: string, locale = 'en', domainSlug?: string) {
+    if (!domainSlug) {
+      throw new BadRequestException('domainSlug is required');
     }
 
-    // Legacy: fall back to slug lookup ONLY if using default locale
-    // (don't fall back when locale is explicitly specified)
-    if (!template && locale === 'en') {
-      template = await this.prisma.template.findUnique({
-        where: { slug: idOrSlug },
+    // Find domain by slug
+    const domain = await this.prisma.domain.findUnique({
+      where: { slug: domainSlug },
+    });
+
+    if (!domain) {
+      throw new NotFoundException(`Domain "${domainSlug}" not found`);
+    }
+
+    const domainId = domain.id;
+
+    // Try by ID first (must also match domainId)
+    let template = await this.prisma.template.findFirst({
+      where: { id: idOrSlug, domainId },
+    });
+
+    // Then by baseSlug + locale + domainId
+    if (!template) {
+      template = await this.prisma.template.findFirst({
+        where: { baseSlug: idOrSlug, locale, domainId },
       });
     }
 
     if (!template)
       throw new NotFoundException(
-        `Template "${idOrSlug}" not found for locale "${locale}"`,
+        `Template "${idOrSlug}" not found for locale "${locale}" in domain "${domainSlug}"`,
       );
 
     if (!template.currentVersionId) {
@@ -74,8 +81,9 @@ export class RenderService implements OnModuleInit {
     idOrSlug: string,
     variables: Record<string, unknown>,
     locale = 'en',
+    domainSlug?: string,
   ) {
-    const template = await this.getTemplate(idOrSlug, locale);
+    const template = await this.getTemplate(idOrSlug, locale, domainSlug);
 
     const schema = template.variables as unknown as TemplateVariable[];
     const merged = this.mergeWithDefaults(schema, variables);
