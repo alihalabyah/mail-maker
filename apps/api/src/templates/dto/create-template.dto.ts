@@ -28,7 +28,10 @@ export class CreateTemplateDto {
   @IsIn(['en', 'ar'], { message: 'locale must be either "en" or "ar"' })
   locale?: string;
 
-  @ApiProperty({ example: 'welcome-email', description: 'URL-safe slug (lowercase, hyphens only)' })
+  @ApiProperty({
+    example: 'welcome-email',
+    description: 'URL-safe slug (lowercase, hyphens only)',
+  })
   @IsString()
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
     message: 'slug must be lowercase alphanumeric with hyphens',
@@ -57,4 +60,9 @@ export class CreateTemplateDto {
   @ValidateNested({ each: true })
   @Type(() => TemplateVariableDto)
   variables: TemplateVariableDto[];
+
+  @ApiPropertyOptional({ description: 'Domain ID for the template' })
+  @IsOptional()
+  @IsString()
+  domainId?: string;
 }

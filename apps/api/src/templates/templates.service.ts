@@ -23,14 +23,15 @@ export class TemplatesService {
     const baseSlug = dto.baseSlug ?? dto.slug;
     const locale = dto.locale ?? 'en';
     const slug = locale === 'en' ? baseSlug : `${baseSlug}-${locale}`;
+    const domainId = dto.domainId ?? 'clq0proddefault001';
 
-    // Check baseSlug+locale uniqueness
-    const existing = await this.prisma.template.findUnique({
-      where: { baseSlug_locale: { baseSlug, locale } },
+    // Check baseSlug+locale+domainId uniqueness
+    const existing = await this.prisma.template.findFirst({
+      where: { baseSlug, locale, domainId },
     });
     if (existing)
       throw new ConflictException(
-        `A ${locale} version of "${baseSlug}" already exists`,
+        `A ${locale} version of "${baseSlug}" already exists in this domain`,
       );
 
     return this.prisma.template.create({
@@ -48,19 +49,21 @@ export class TemplatesService {
 
         variables: (dto.variables ?? []) as unknown as Prisma.InputJsonValue,
         createdById: userId,
+        domainId,
       },
     });
   }
 
-  async findAll(search?: string, page = 1, limit = 20) {
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { slug: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+  async findAll(search?: string, page = 1, limit = 20, domainId?: string) {
+    const where = {
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' as const } },
+          { slug: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }),
+      ...(domainId && { domainId }),
+    };
 
     const [items, total] = await Promise.all([
       this.prisma.template.findMany({
@@ -80,6 +83,7 @@ export class TemplatesService {
           status: true,
           createdAt: true,
           updatedAt: true,
+          domain: { select: { id: true, name: true } },
           createdBy: { select: { id: true, email: true } },
         },
       }),
@@ -143,9 +147,11 @@ export class TemplatesService {
     // Generate a unique baseSlug by appending "-copy"
     let counter = 1;
     let newBaseSlug = `${template.baseSlug}-copy`;
-    while (await this.prisma.template.findUnique({
-      where: { baseSlug_locale: { baseSlug: newBaseSlug, locale: template.locale } },
-    })) {
+    while (
+      await this.prisma.template.findFirst({
+        where: { baseSlug: newBaseSlug, locale: template.locale, domainId: template.domainId },
+      })
+    ) {
       counter++;
       newBaseSlug = `${template.baseSlug}-copy-${counter}`;
     }
@@ -165,8 +171,67 @@ export class TemplatesService {
         htmlTemplate: template.htmlTemplate,
         variables: template.variables as object,
         createdById: userId,
+        domainId: template.domainId,
       },
     });
+  }
+
+  async copyToDomain(id: string, targetDomainId: string, userId: string) {
+    const template = await this.prisma.template.findUnique({
+      where: { id },
+      include: { domain: true },
+    });
+
+    if (!template) throw new NotFoundException('Template not found');
+    if (template.domainId === targetDomainId) {
+      throw new ConflictException('Cannot copy to the same domain');
+    }
+
+    // Check if template with same baseSlug+locale exists in target domain
+    const existing = await this.prisma.template.findFirst({
+      where: {
+        baseSlug: template.baseSlug,
+        locale: template.locale,
+        domainId: targetDomainId,
+      },
+    });
+
+    if (existing) {
+      // Update existing
+      return this.prisma.template.update({
+        where: { id: existing.id },
+        data: {
+          name: template.name,
+          description: template.description,
+          subject: template.subject,
+          designJson: template.designJson as unknown as Prisma.InputJsonValue,
+          htmlTemplate: template.htmlTemplate,
+          variables: template.variables as unknown as Prisma.InputJsonValue,
+          status: 'draft',
+        },
+      });
+    } else {
+      // Create new
+      return this.prisma.template.create({
+        data: {
+          baseSlug: template.baseSlug,
+          locale: template.locale,
+          slug:
+            template.locale === 'en'
+              ? template.baseSlug
+              : `${template.baseSlug}-${template.locale}`,
+          domainId: targetDomainId,
+          name: template.name,
+          description: template.description,
+          subject: template.subject,
+          designJson: template.designJson as unknown as Prisma.InputJsonValue,
+          htmlTemplate: template.htmlTemplate,
+          variables: template.variables as unknown as Prisma.InputJsonValue,
+          status: 'draft',
+          createdById: userId,
+        },
+      });
+    }
   }
 
   async publish(id: string, userId: string) {
@@ -272,7 +337,7 @@ export class TemplatesService {
           if (!match) continue;
           const slug = match[1];
 
-          const component = await this.prisma.component.findUnique({
+          const component = await this.prisma.component.findFirst({
             where: { slug },
           });
           if (!component) continue;

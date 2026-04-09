@@ -15,11 +15,11 @@ export class ComponentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateComponentDto, userId: string) {
-    const existing = await this.prisma.component.findUnique({
-      where: { slug: dto.slug },
+    const existing = await this.prisma.component.findFirst({
+      where: { slug: dto.slug, domainId: dto.domainId },
     });
     if (existing)
-      throw new ConflictException(`Slug "${dto.slug}" is already in use`);
+      throw new ConflictException(`Slug "${dto.slug}" is already in use in this domain`);
     return this.prisma.component.create({
       data: {
         slug: dto.slug,
@@ -29,12 +29,14 @@ export class ComponentsService {
         htmlTemplate: dto.htmlTemplate,
         variables: (dto.variables ?? []) as unknown as Prisma.InputJsonValue,
         createdById: userId,
+        domainId: dto.domainId,
       },
     });
   }
 
-  async findAll() {
+  async findAll(domainId?: string) {
     return this.prisma.component.findMany({
+      where: { ...(domainId && { domainId }) },
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
@@ -44,6 +46,7 @@ export class ComponentsService {
         variables: true,
         createdAt: true,
         updatedAt: true,
+        domain: { select: { id: true, name: true } },
       },
     });
   }
@@ -107,7 +110,11 @@ export class ComponentsService {
     // Generate a unique slug by appending "-copy"
     let counter = 1;
     let newSlug = `${component.slug}-copy`;
-    while (await this.prisma.component.findUnique({ where: { slug: newSlug } })) {
+    while (
+      await this.prisma.component.findFirst({
+        where: { slug: newSlug, domainId: component.domainId },
+      })
+    ) {
       counter++;
       newSlug = `${component.slug}-copy-${counter}`;
     }
@@ -121,8 +128,57 @@ export class ComponentsService {
         htmlTemplate: component.htmlTemplate,
         variables: component.variables as object,
         createdById: userId,
+        domainId: component.domainId,
       },
     });
+  }
+
+  async copyToDomain(id: string, targetDomainId: string, userId: string) {
+    const component = await this.prisma.component.findUnique({
+      where: { id },
+      include: { domain: true },
+    });
+
+    if (!component) throw new NotFoundException('Component not found');
+    if (component.domainId === targetDomainId) {
+      throw new ConflictException('Cannot copy to the same domain');
+    }
+
+    // Check if component with same slug exists in target domain
+    const existing = await this.prisma.component.findFirst({
+      where: {
+        slug: component.slug,
+        domainId: targetDomainId,
+      },
+    });
+
+    if (existing) {
+      // Update existing
+      return this.prisma.component.update({
+        where: { id: existing.id },
+        data: {
+          name: component.name,
+          description: component.description,
+          designJson: component.designJson as unknown as Prisma.InputJsonValue,
+          htmlTemplate: component.htmlTemplate,
+          variables: component.variables as unknown as Prisma.InputJsonValue,
+        },
+      });
+    } else {
+      // Create new
+      return this.prisma.component.create({
+        data: {
+          slug: component.slug,
+          domainId: targetDomainId,
+          name: component.name,
+          description: component.description,
+          designJson: component.designJson as unknown as Prisma.InputJsonValue,
+          htmlTemplate: component.htmlTemplate,
+          variables: component.variables as unknown as Prisma.InputJsonValue,
+          createdById: userId,
+        },
+      });
+    }
   }
 
   /** Render component HTML with default variables applied. */
