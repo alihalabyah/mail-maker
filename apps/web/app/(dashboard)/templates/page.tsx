@@ -2,15 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Pencil, Trash2, Eye, Copy } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useTemplates, useDeleteTemplate, useDuplicateTemplate } from "@/hooks/useTemplates";
+import { useDomains } from "@/hooks/useDomains";
 import { Header } from "@/components/layout/Header";
+import { ImportDialog } from "@/components/import/ImportDialog";
+import { TemplateActionsMenu } from "@/components/template/TemplateActionsMenu";
 import type { TemplateSummary } from "@/types";
 
 export default function TemplatesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useTemplates(search || undefined, page);
+  const [domainFilter, setDomainFilter] = useState<string | undefined>();
+  const { data, isLoading } = useTemplates(search || undefined, page, domainFilter);
+  const { data: domains } = useDomains();
   const deleteMutation = useDeleteTemplate();
   const duplicateMutation = useDuplicateTemplate();
 
@@ -30,28 +35,49 @@ export default function TemplatesPage() {
       <Header
         title="Templates"
         actions={
-          <Link
-            href="/templates/new"
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New Template
-          </Link>
+          <div className="flex items-center gap-2">
+            <ImportDialog type="template" />
+            <Link
+              href="/templates/new"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New Template
+            </Link>
+          </div>
         }
       />
 
       <div className="p-6 space-y-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            placeholder="Search templates…"
-            value={search}
+        <div className="flex items-center gap-4">
+          <div className="relative max-w-sm flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              placeholder="Search templates…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-full pl-9 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <select
+            value={domainFilter ?? ""}
             onChange={(e) => {
-              setSearch(e.target.value);
+              setDomainFilter(e.target.value || undefined);
               setPage(1);
             }}
-            className="w-full pl-9 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+            className="px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">All domains</option>
+            {domains?.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {isLoading ? (
@@ -67,6 +93,7 @@ export default function TemplatesPage() {
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Domain</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Locale</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Slug</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Variables</th>
@@ -78,6 +105,11 @@ export default function TemplatesPage() {
                 {data.items.map((t) => (
                   <tr key={t.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-900">{t.name}</td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700">
+                        {t.domain?.name ?? '-'}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
                         <span
@@ -110,37 +142,13 @@ export default function TemplatesPage() {
                       {new Date(t.updatedAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 justify-end">
-                        <Link
-                          href={`/templates/${t.id}/preview`}
-                          className="p-1.5 text-gray-400 hover:text-gray-700 rounded"
-                          title="Preview"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                        <Link
-                          href={`/templates/${t.id}`}
-                          className="p-1.5 text-gray-400 hover:text-gray-700 rounded"
-                          title="Edit"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Link>
-                        <button
-                          onClick={() => handleDuplicate(t)}
-                          disabled={duplicateMutation.isPending}
-                          className="p-1.5 text-gray-400 hover:text-primary rounded disabled:opacity-40"
-                          title="Duplicate"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(t)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <TemplateActionsMenu
+                        template={t}
+                        onDuplicate={handleDuplicate}
+                        onDelete={handleDelete}
+                        isDuplicating={duplicateMutation.isPending}
+                        isDeleting={deleteMutation.isPending}
+                      />
                     </td>
                   </tr>
                 ))}
