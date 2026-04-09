@@ -109,7 +109,7 @@ async function seedTemplates(userId: string) {
     const name = formatTemplateName(file);
     const slug = slugify(name);
 
-    const existing = await prisma.template.findUnique({ where: { slug } });
+    const existing = await prisma.template.findFirst({ where: { slug } });
     if (existing) {
       console.log(`  (exists) ${slug}`);
       continue;

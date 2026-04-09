@@ -23,7 +23,7 @@ export class TemplatesService {
     const baseSlug = dto.baseSlug ?? dto.slug;
     const locale = dto.locale ?? 'en';
     const slug = locale === 'en' ? baseSlug : `${baseSlug}-${locale}`;
-    const domainId = dto.domainId ?? 'clq0proddefault001';
+    const domainId = dto.domainId ?? 'cmnrf2b9l0001jbcg767n9aet';
 
     // Check baseSlug+locale+domainId uniqueness
     const existing = await this.prisma.template.findFirst({
