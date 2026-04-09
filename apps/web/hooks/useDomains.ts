@@ -45,3 +45,11 @@ export function useDeleteDomain() {
     onSuccess: () => qc.invalidateQueries({ queryKey: DOMAINS_KEY }),
   });
 }
+
+export function useSetDefaultDomain() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<Domain>(`/domains/${id}/set-default`, {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: DOMAINS_KEY }),
+  });
+}

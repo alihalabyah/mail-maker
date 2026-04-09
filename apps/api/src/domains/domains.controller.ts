@@ -43,4 +43,10 @@ export class DomainsController {
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }
+
+  @Post(':id/set-default')
+  @ApiOperation({ summary: 'Set domain as default' })
+  setAsDefault(@Param('id') id: string) {
+    return this.service.setAsDefault(id);
+  }
 }

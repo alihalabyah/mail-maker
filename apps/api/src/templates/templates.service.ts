@@ -23,7 +23,15 @@ export class TemplatesService {
     const baseSlug = dto.baseSlug ?? dto.slug;
     const locale = dto.locale ?? 'en';
     const slug = locale === 'en' ? baseSlug : `${baseSlug}-${locale}`;
-    const domainId = dto.domainId ?? 'cmnrf2b9l0001jbcg767n9aet';
+
+    // Find default domain or use first available
+    let domainId = dto.domainId;
+    if (!domainId) {
+      const defaultDomain = await this.prisma.domain.findFirst({
+        where: { isDefault: true },
+      });
+      domainId = defaultDomain?.id ?? (await this.prisma.domain.findFirst({ orderBy: { name: 'asc' } }))?.id;
+    }
 
     // Check baseSlug+locale+domainId uniqueness
     const existing = await this.prisma.template.findFirst({

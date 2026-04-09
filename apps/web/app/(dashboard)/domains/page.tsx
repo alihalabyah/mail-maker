@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { useDomains, useCreateDomain, useUpdateDomain, useDeleteDomain } from "@/hooks/useDomains";
+import { Plus, Pencil, Trash2, Check } from "lucide-react";
+import { useDomains, useCreateDomain, useUpdateDomain, useDeleteDomain, useSetDefaultDomain } from "@/hooks/useDomains";
 import { Header } from "@/components/layout/Header";
 import type { Domain } from "@/types";
 
@@ -11,6 +11,7 @@ export default function DomainsPage() {
   const createMutation = useCreateDomain();
   const updateMutation = useUpdateDomain();
   const deleteMutation = useDeleteDomain();
+  const setDefaultMutation = useSetDefaultDomain();
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Domain | null>(null);
@@ -37,6 +38,10 @@ export default function DomainsPage() {
   const handleDelete = async (domain: Domain) => {
     if (!confirm(`Delete "${domain.name}"? This cannot be undone.`)) return;
     await deleteMutation.mutateAsync(domain.id);
+  };
+
+  const handleSetDefault = async (domain: Domain) => {
+    await setDefaultMutation.mutateAsync(domain.id);
   };
 
   const openCreate = () => {
@@ -103,6 +108,16 @@ export default function DomainsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 justify-end">
+                        {!d.isDefault && (
+                          <button
+                            onClick={() => handleSetDefault(d)}
+                            className="p-1.5 text-gray-400 hover:text-primary rounded"
+                            title="Set as default"
+                            disabled={setDefaultMutation.isPending}
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => openEdit(d)}
                           className="p-1.5 text-gray-400 hover:text-gray-700 rounded"

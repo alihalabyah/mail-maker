@@ -102,4 +102,21 @@ export class DomainsService {
 
     await this.prisma.domain.delete({ where: { id } });
   }
+
+  async setAsDefault(id: string) {
+    const domain = await this.findOne(id);
+
+    // Unset default on all domains
+    await this.prisma.domain.updateMany({
+      data: { isDefault: false },
+    });
+
+    // Set this domain as default
+    await this.prisma.domain.update({
+      where: { id },
+      data: { isDefault: true },
+    });
+
+    return this.findOne(id);
+  }
 }
