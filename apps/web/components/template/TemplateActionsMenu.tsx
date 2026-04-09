@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { MoreVertical, ChevronRight } from "lucide-react";
 import type { TemplateSummary } from "@/types";
@@ -25,20 +25,9 @@ export function TemplateActionsMenu({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [copySubmenuOpen, setCopySubmenuOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
   const { data: domains } = useDomains();
   const copyMutation = useCopyTemplateToDomain();
   const exportMutation = useExportTemplate();
-
-  useEffect(() => {
-    if (open && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setMenuPosition({ top: rect.bottom, left: rect.right });
-    } else {
-      setMenuPosition(null);
-    }
-  }, [open]);
 
   const handleExport = async () => {
     try {
@@ -76,7 +65,6 @@ export function TemplateActionsMenu({
   return (
     <div className="relative">
       <button
-        ref={buttonRef}
         onClick={() => setOpen(!open)}
         className="p-1.5 text-gray-400 hover:text-gray-700 rounded hover:bg-gray-100"
         title="Actions"
@@ -84,23 +72,16 @@ export function TemplateActionsMenu({
         <MoreVertical className="w-4 h-4" />
       </button>
 
-      {open && menuPosition && (
+      {open && (
         <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-10"
             onClick={() => {
               setOpen(false);
               setCopySubmenuOpen(false);
             }}
           />
-          <div
-            className="fixed z-50 bg-white border rounded-md shadow-lg py-1 min-w-48"
-            style={{
-              top: `${menuPosition.top}px`,
-              left: `${menuPosition.left}px`,
-              transform: 'translateX(-100%)',
-            }}
-          >
+          <div className="absolute right-0 top-0 z-20 bg-white border rounded-md shadow-lg py-1 min-w-48">
             <Link
               href={`/templates/${template.id}/preview`}
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -143,17 +124,10 @@ export function TemplateActionsMenu({
               {copySubmenuOpen && otherDomains.length > 0 && (
                 <>
                   <div
-                    className="fixed inset-0 z-40"
+                    className="fixed inset-0 z-20"
                     onClick={() => setCopySubmenuOpen(false)}
                   />
-                  <div
-                    className="fixed z-50 bg-white border rounded-md shadow-lg py-1 min-w-48"
-                    style={{
-                      top: `${menuPosition.top}px`,
-                      left: `${menuPosition.left}px`,
-                      transform: 'translateX(-200%)',
-                    }}
-                  >
+                  <div className="absolute right-full top-0 mr-1 bg-white border rounded-md shadow-lg py-1 min-w-48 z-30">
                     {otherDomains.map((d) => (
                       <button
                         key={d.id}

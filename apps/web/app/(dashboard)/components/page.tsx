@@ -69,7 +69,7 @@ export default function ComponentsPage() {
             <p className="text-sm mt-1">Create your first shared component to get started.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="bg-white rounded-lg border">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>

@@ -38,7 +38,7 @@ export default function TemplatesPage() {
           <div className="flex items-center gap-2">
             <ImportDialog type="template" />
             <Link
-              href="/templates/new"
+              href={`/templates/new${domainFilter ? `?domain=${domainFilter}` : ''}`}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -88,7 +88,7 @@ export default function TemplatesPage() {
             <p className="text-sm mt-1">Create your first email template to get started.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="bg-white rounded-lg border">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
