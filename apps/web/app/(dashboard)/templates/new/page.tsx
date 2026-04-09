@@ -41,6 +41,7 @@ export default function NewTemplatePage() {
 
   const defaultBaseSlug = searchParams.get('baseSlug') ?? '';
   const defaultLocale = (searchParams.get('locale') ?? 'en') as 'en' | 'ar';
+  const defaultDomain = searchParams.get('domain') ?? '';
 
   const {
     register,
@@ -79,6 +80,7 @@ export default function NewTemplatePage() {
         designJson: editorValues.design,
         htmlTemplate: editorValues.html,
         variables,
+        domainId: defaultDomain || undefined,
       });
       router.push(`/templates/${template.id}`);
     } finally {
