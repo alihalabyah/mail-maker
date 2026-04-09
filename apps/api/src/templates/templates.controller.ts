@@ -23,6 +23,7 @@ import { User } from '@prisma/client';
 import { TemplatesService } from './templates.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
+import { PreviewRequestDto } from './dto/preview-request.dto';
 import { RenderRequestDto } from '../render/dto/render-request.dto';
 import { SendTestDto } from '../render/dto/send-test.dto';
 import { MailerService } from '../mailer/mailer.service';
@@ -48,15 +49,18 @@ export class TemplatesController {
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'domainId', required: false })
   findAll(
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('domainId') domainId?: string,
   ) {
     return this.templatesService.findAll(
       search,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 20,
+      domainId,
     );
   }
 
@@ -78,9 +82,9 @@ export class TemplatesController {
   @ApiOperation({
     summary: 'Preview a rendered template (JWT auth, for the UI)',
   })
-  async preview(@Param('id') id: string, @Body() dto: RenderRequestDto) {
+  async preview(@Param('id') id: string, @Body() dto: PreviewRequestDto) {
     const template = await this.templatesService.findOne(id);
-    return await this.templatesService.preview(template, dto.variables);
+    return await this.templatesService.preview(template, dto.variables ?? {});
   }
 
   @Post(':id/send-test')
@@ -88,7 +92,7 @@ export class TemplatesController {
   @ApiOperation({
     summary: 'Render and send a test email (JWT auth, for the UI)',
   })
-  async sendTest(@Param('id') id: string, @Body() dto: SendTestDto) {
+  async sendTest(@Param('id') id: string, @Body() dto: PreviewRequestDto & { to: string }) {
     const template = await this.templatesService.findOne(id);
     const { html, subject } = await this.templatesService.preview(
       template,
@@ -109,6 +113,16 @@ export class TemplatesController {
   @ApiOperation({ summary: 'Duplicate a template' })
   duplicate(@Param('id') id: string, @CurrentUser() user: User) {
     return this.templatesService.duplicate(id, user.id);
+  }
+
+  @Post(':id/copy-to-domain')
+  @ApiOperation({ summary: 'Copy template to another domain' })
+  copyToDomain(
+    @Param('id') id: string,
+    @Body('targetDomainId') targetDomainId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.templatesService.copyToDomain(id, targetDomainId, user.id);
   }
 
   @Post(':id/publish')

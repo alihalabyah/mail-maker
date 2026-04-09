@@ -8,16 +8,17 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '@prisma/client';
 import { ComponentsService } from './components.service';
 import { CreateComponentDto } from './dto/create-component.dto';
 import { UpdateComponentDto } from './dto/update-component.dto';
-import { RenderRequestDto } from '../render/dto/render-request.dto';
+import { PreviewRequestDto } from './dto/preview-request.dto';
 
 @ApiTags('components')
 @ApiBearerAuth()
@@ -34,8 +35,9 @@ export class ComponentsController {
 
   @Get()
   @ApiOperation({ summary: 'List all components' })
-  findAll() {
-    return this.componentsService.findAll();
+  @ApiQuery({ name: 'domainId', required: false })
+  findAll(@Query('domainId') domainId?: string) {
+    return this.componentsService.findAll(domainId);
   }
 
   @Get(':id')
@@ -63,17 +65,27 @@ export class ComponentsController {
     return this.componentsService.duplicate(id, user.id);
   }
 
+  @Post(':id/copy-to-domain')
+  @ApiOperation({ summary: 'Copy component to another domain' })
+  copyToDomain(
+    @Param('id') id: string,
+    @Body('targetDomainId') targetDomainId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.componentsService.copyToDomain(id, targetDomainId, user.id);
+  }
+
   @Post(':id/preview')
   @ApiOperation({ summary: 'Preview rendered component HTML' })
-  async preview(@Param('id') id: string, @Body() dto: RenderRequestDto) {
+  async preview(@Param('id') id: string, @Body() dto: PreviewRequestDto) {
     const component = await this.componentsService.findOne(id);
     const hbs = await this.componentsService.resolvePartials(
       component.htmlTemplate,
-      dto.variables,
+      dto.variables ?? {},
     );
     const html = this.componentsService.renderHtml(
       component,
-      dto.variables,
+      dto.variables ?? {},
       hbs,
     );
     return { html };
