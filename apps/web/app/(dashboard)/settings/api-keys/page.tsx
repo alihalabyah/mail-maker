@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useApiKeys, useCreateApiKey, useDeleteApiKey } from "@/hooks/useApiKeys";
+import { useDomains } from "@/hooks/useDomains";
 import { Header } from "@/components/layout/Header";
 import { ApiKeyScope } from "@mail-maker/shared";
 import type { ApiKeySummary } from "@/types";
@@ -25,6 +26,7 @@ const SCOPE_LABELS: Record<ApiKeyScope, string> = {
 
 export default function ApiKeysPage() {
   const { data: keys, isLoading } = useApiKeys();
+  const { data: domains } = useDomains();
   const createMutation = useCreateApiKey();
   const deleteMutation = useDeleteApiKey();
   const [showForm, setShowForm] = useState(false);
@@ -223,6 +225,7 @@ export default function ApiKeysPage() {
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Prefix</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Domain</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Scopes</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Last used</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Expires</th>
@@ -237,6 +240,11 @@ export default function ApiKeysPage() {
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">
                       {key.prefix}…
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700">
+                        {key.domain?.name ?? '-'}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1 flex-wrap">
@@ -307,35 +315,6 @@ function CopyCode({ code }: { code: string }) {
   );
 }
 
-const RENDER_BODY = `{
-  "variables": {
-    "first_name": "John",
-    "order_number": "ORD-123",
-    "amount": "250.00"
-  }
-}`;
-
-const RENDER_CURL = `curl -X POST https://your-api-host/v1/render/your-template-slug \\
-  -H "Content-Type: application/json" \\
-  -H "X-API-Key: mk_your_key_here" \\
-  -d '{
-    "variables": {
-      "first_name": "John",
-      "order_number": "ORD-123"
-    }
-  }'`;
-
-const SEND_TEST_CURL = `curl -X POST https://your-api-host/v1/send-test/your-template-slug \\
-  -H "Content-Type: application/json" \\
-  -H "X-API-Key: mk_your_key_here" \\
-  -d '{
-    "to": "you@example.com",
-    "variables": {
-      "first_name": "John",
-      "order_number": "ORD-123"
-    }
-  }'`;
-
 function ApiDocs() {
   return (
     <div className="space-y-6">
@@ -362,13 +341,25 @@ function ApiDocs() {
             <code className="text-xs font-mono text-gray-700">/v1/render/:templateSlug</code>
             <span className="text-xs text-gray-400">— returns rendered HTML + subject</span>
           </div>
+          <p className="text-xs text-gray-500">
+            Renders the <strong>published</strong> version of a template. <strong>domainSlug</strong> and <strong>locale</strong> are provided in the request body to specify which environment and language to render from.
+          </p>
           <p className="text-xs font-medium text-gray-600">Request body</p>
-          <CopyCode code={RENDER_BODY} />
-          <p className="text-xs font-medium text-gray-600 pt-1">cURL example (using tunnel URL)</p>
-          <CopyCode code={`curl -X POST https://your-api-tunnel-url.trycloudflare.com/v1/render/your-template-slug \\
+          <CopyCode code={`{
+  "domainSlug": "prod",
+  "locale": "en",
+  "variables": {
+    "first_name": "John",
+    "order_number": "ORD-123"
+  }
+}`} />
+          <p className="text-xs font-medium text-gray-600 pt-1">cURL example</p>
+          <CopyCode code={`curl -X POST "https://your-api-tunnel-url.trycloudflare.com/v1/render/order-confirmation" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: mk_your_key_here" \\
   -d '{
+    "domainSlug": "prod",
+    "locale": "en",
     "variables": {
       "first_name": "John",
       "order_number": "ORD-123"
@@ -386,14 +377,26 @@ function ApiDocs() {
             <span className="text-xs text-gray-400">— render + send to test inbox (Mailpit)</span>
           </div>
           <p className="text-xs text-gray-500">
-            Sends to a test inbox accessible via the Mailpit tunnel URL.
+            Sends to a test inbox accessible via the Mailpit tunnel URL. <strong>domainSlug</strong> and <strong>locale</strong> are provided in the request body.
           </p>
+          <p className="text-xs font-medium text-gray-600">Request body</p>
+          <CopyCode code={`{
+  "to": "test@example.com",
+  "domainSlug": "prod",
+  "locale": "en",
+  "variables": {
+    "first_name": "John",
+    "order_number": "ORD-123"
+  }
+}`} />
           <p className="text-xs font-medium text-gray-600">cURL example</p>
-          <CopyCode code={`curl -X POST https://your-api-tunnel-url.trycloudflare.com/v1/send-test/your-template-slug \\
+          <CopyCode code={`curl -X POST "https://your-api-tunnel-url.trycloudflare.com/v1/send-test/your-template-slug" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: mk_your_key_here" \\
   -d '{
     "to": "test@example.com",
+    "domainSlug": "prod",
+    "locale": "en",
     "variables": {
       "first_name": "John",
       "order_number": "ORD-123"
@@ -407,6 +410,21 @@ function ApiDocs() {
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-600">Render response</p>
           <CopyCode code={`{ "html": "<html>…</html>", "subject": "Welcome John" }`} />
+        </div>
+
+        <hr />
+
+        {/* Locale & Versioning info */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-700">ℹ️ API Request Body Changes</p>
+          <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside">
+            <li><strong>domainSlug (required):</strong> Must specify which domain/environment to render from using its slug (e.g., <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">prod</code>, <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">uat</code>, <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">dev</code>)</li>
+            <li><strong>locale (optional):</strong> Template language variant (default: <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">en</code>)</li>
+            <li><strong>In request body:</strong> Both <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">domainSlug</code> and <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">locale</code> are now sent in the JSON request body, not as query parameters</li>
+            <li><strong>Domain slugs are auto-generated:</strong> Created from domain name (lowercase, hyphens for spaces)</li>
+            <li><strong>Published versions:</strong> Render API only serves published versions (not drafts)</li>
+            <li><strong>Version history:</strong> Each publish creates an immutable version snapshot</li>
+          </ul>
         </div>
       </div>
     </div>
