@@ -102,7 +102,10 @@ export class TemplatesService {
   }
 
   async findOne(id: string) {
-    const template = await this.prisma.template.findUnique({ where: { id } });
+    const template = await this.prisma.template.findUnique({
+      where: { id },
+      include: { domain: { select: { id: true, name: true } } },
+    });
     if (!template) throw new NotFoundException('Template not found');
     const refreshedDesignJson = await this.refreshComponentPreviews(
       template.designJson,
