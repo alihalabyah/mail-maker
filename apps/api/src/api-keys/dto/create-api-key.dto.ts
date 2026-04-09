@@ -1,4 +1,10 @@
-import { IsString, IsArray, IsEnum, IsOptional, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ApiKeyScope } from '@prisma/client';
 
@@ -7,7 +13,11 @@ export class CreateApiKeyDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ enum: ApiKeyScope, isArray: true, example: [ApiKeyScope.RENDER] })
+  @ApiProperty({
+    enum: ApiKeyScope,
+    isArray: true,
+    example: [ApiKeyScope.RENDER],
+  })
   @IsArray()
   @IsEnum(ApiKeyScope, { each: true })
   scopes: ApiKeyScope[];

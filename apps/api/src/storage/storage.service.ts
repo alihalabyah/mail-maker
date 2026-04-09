@@ -48,6 +48,36 @@ export class StorageService {
     return this.buildPublicUrl(key);
   }
 
+  async uploadFromBuffer(buffer: Buffer, filename: string, mimeType?: string): Promise<string> {
+    const ext = filename.split('.').pop() || 'bin';
+    const key = `uploads/${Date.now()}-${randomUUID()}.${ext}`;
+
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: mimeType || this.getMimeType(ext),
+        ACL: 'public-read',
+      }),
+    );
+
+    this.logger.log(`Uploaded ${key} (${buffer.length} bytes)`);
+    return this.buildPublicUrl(key);
+  }
+
+  private getMimeType(ext: string): string {
+    const types: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      svg: 'image/svg+xml',
+      webp: 'image/webp',
+    };
+    return types[ext] || 'application/octet-stream';
+  }
+
   private buildPublicUrl(key: string): string {
     if (this.endpoint) {
       // OCI / MinIO / LocalStack path-style URL

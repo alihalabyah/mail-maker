@@ -58,7 +58,10 @@ export class ApiKeysService {
         }
         // Update lastUsedAt in background (non-blocking)
         this.prisma.apiKey
-          .update({ where: { id: candidate.id }, data: { lastUsedAt: new Date() } })
+          .update({
+            where: { id: candidate.id },
+            data: { lastUsedAt: new Date() },
+          })
           .catch(() => undefined);
         return candidate;
       }

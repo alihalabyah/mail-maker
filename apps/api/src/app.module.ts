@@ -8,6 +8,8 @@ import { StorageModule } from './storage/storage.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { RenderModule } from './render/render.module';
 import { ComponentsModule } from './components/components.module';
+import { ExportImportModule } from './export-import/export-import.module';
+import { DomainsModule } from './domains/domains.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { ComponentsModule } from './components/components.module';
     ApiKeysModule,
     RenderModule,
     ComponentsModule,
+    ExportImportModule,
+    DomainsModule,
   ],
 })
 export class AppModule {}

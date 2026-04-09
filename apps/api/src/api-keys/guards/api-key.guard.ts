@@ -12,7 +12,9 @@ export class ApiKeyGuard implements CanActivate {
   constructor(private apiKeysService: ApiKeysService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest<Request & { apiKey?: unknown; user?: unknown }>();
+    const req = context
+      .switchToHttp()
+      .getRequest<Request & { apiKey?: unknown; user?: unknown }>();
 
     const rawKey =
       (req.headers['x-api-key'] as string | undefined) ??
