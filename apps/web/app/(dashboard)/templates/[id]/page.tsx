@@ -320,6 +320,7 @@ export default function EditTemplatePage() {
     <div className="flex flex-col h-full">
       <Header
         title={template.name}
+        subtitle={template.domain?.name ? `Domain: ${template.domain.name}` : undefined}
         actions={
           <div className="flex items-center gap-2">
             {saved && <span className="text-xs text-green-600 font-medium">Saved!</span>}
@@ -340,7 +341,7 @@ export default function EditTemplatePage() {
                   </Link>
                 ) : (
                   <Link key={loc}
-                    href={`/templates/new?baseSlug=${template.baseSlug}&locale=${loc}`}
+                    href={`/templates/new?baseSlug=${template.baseSlug}&locale=${loc}&domain=${template.domainId}`}
                     className="px-3 py-1.5 text-xs text-gray-400 hover:text-primary uppercase">
                     + {loc}
                   </Link>
