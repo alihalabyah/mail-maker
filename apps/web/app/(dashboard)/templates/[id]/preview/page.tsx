@@ -75,6 +75,7 @@ export default function PreviewPage() {
     <div className="flex flex-col h-full">
       <Header
         title={`Preview: ${template.name}`}
+        subtitle={template.domain?.name ? `Domain: ${template.domain.name}` : undefined}
         actions={
           <Link
             href={`/templates/${id}`}
@@ -89,6 +90,11 @@ export default function PreviewPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Variables input panel */}
         <aside className="w-72 border-r bg-white overflow-y-auto flex-shrink-0 p-4 space-y-4">
+          {template.domain?.name && (
+            <div className="text-xs text-gray-500 bg-gray-50 border rounded px-2 py-1.5">
+              Domain: <span className="font-medium text-gray-700">{template.domain.name}</span>
+            </div>
+          )}
           <h3 className="text-sm font-semibold text-gray-700">Test Variables</h3>
 
           {schema.length === 0 ? (

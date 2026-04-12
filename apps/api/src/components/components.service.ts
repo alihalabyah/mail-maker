@@ -15,8 +15,19 @@ export class ComponentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateComponentDto, userId: string) {
+    // Match template behavior: if no domain is provided, use default (or first) domain.
+    let domainId = dto.domainId;
+    if (!domainId) {
+      const defaultDomain = await this.prisma.domain.findFirst({
+        where: { isDefault: true },
+      });
+      domainId =
+        defaultDomain?.id ??
+        (await this.prisma.domain.findFirst({ orderBy: { name: 'asc' } }))?.id;
+    }
+
     const existing = await this.prisma.component.findFirst({
-      where: { slug: dto.slug, domainId: dto.domainId },
+      where: { slug: dto.slug, domainId },
     });
     if (existing)
       throw new ConflictException(`Slug "${dto.slug}" is already in use in this domain`);
@@ -29,8 +40,9 @@ export class ComponentsService {
         htmlTemplate: dto.htmlTemplate,
         variables: (dto.variables ?? []) as unknown as Prisma.InputJsonValue,
         createdById: userId,
-        domainId: dto.domainId,
+        domainId,
       },
+      include: { domain: { select: { id: true, name: true } } },
     });
   }
 
@@ -52,7 +64,10 @@ export class ComponentsService {
   }
 
   async findOne(id: string) {
-    const c = await this.prisma.component.findUnique({ where: { id } });
+    const c = await this.prisma.component.findUnique({
+      where: { id },
+      include: { domain: { select: { id: true, name: true } } },
+    });
     if (!c) throw new NotFoundException('Component not found');
     return c;
   }
@@ -94,7 +109,7 @@ export class ComponentsService {
     });
 
     for (const template of templates) {
-      if (template.htmlTemplate.includes(`<!-- component:${component.slug} -->`)) {
+      if (template.htmlTemplate.includes(`{{> ${component.slug}}}`)) {
         throw new ConflictException(
           `Cannot delete component "${component.name}" - it is used in template "${template.name}"`,
         );
@@ -215,9 +230,16 @@ export class ComponentsService {
       const components = await this.prisma.component.findMany({
         where: { slug: { in: slugs } },
       });
+      const foundSlugs = new Set(components.map((c) => c.slug));
       for (const c of components) {
         const rendered = this.renderHtml(c, variables, instance);
         instance.registerPartial(c.slug, rendered);
+      }
+      // Register empty string for any slugs not found in the DB (deleted components)
+      for (const slug of slugs) {
+        if (!foundSlugs.has(slug)) {
+          instance.registerPartial(slug, '');
+        }
       }
     }
     return instance;

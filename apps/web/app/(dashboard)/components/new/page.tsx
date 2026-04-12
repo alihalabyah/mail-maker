@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCreateComponent } from '@/hooks/useComponents';
+import { useDomains } from '@/hooks/useDomains';
 import { Header } from '@/components/layout/Header';
 
 const metaSchema = z.object({
@@ -27,6 +28,10 @@ function toSlug(name: string): string {
 
 export default function NewComponentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedDomainId = searchParams.get('domain') ?? undefined;
+  const { data: domains } = useDomains();
+  const selectedDomain = domains?.find((d) => d.id === selectedDomainId);
   const createMutation = useCreateComponent();
   const [saving, setSaving] = useState(false);
 
@@ -51,6 +56,7 @@ export default function NewComponentPage() {
         designJson: { schemaVersion: 3, body: { rows: [], values: {} } },
         htmlTemplate: '',
         variables: [],
+        domainId: selectedDomainId,
       });
       router.push(`/components/${result.id}`);
     } finally {
@@ -60,7 +66,10 @@ export default function NewComponentPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="New Component" />
+      <Header
+        title="New Component"
+        subtitle={selectedDomain?.name ? `Domain: ${selectedDomain.name}` : undefined}
+      />
 
       <div className="p-6 max-w-lg">
         <form onSubmit={onSubmit} className="space-y-4">

@@ -41,6 +41,8 @@ export interface Template {
   locale: string;            // new — "en" | "ar"
   status: string;            // new — "draft" | "published"
   currentVersionId?: string; // new
+  domainId?: string;
+  domain?: { id: string; name: string };
   name: string;
   description?: string;
   subject: string;
@@ -62,6 +64,8 @@ export interface TemplateVersion {
 export interface Component {
   id: string;
   slug: string;
+  domainId?: string;
+  domain?: { id: string; name: string };
   name: string;
   description?: string;
   designJson: Record<string, unknown>;

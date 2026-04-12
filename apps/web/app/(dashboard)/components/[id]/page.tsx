@@ -114,6 +114,7 @@ export default function EditComponentPage() {
     <div className="flex flex-col h-full">
       <Header
         title={component.name}
+        subtitle={component.domain?.name ? `Domain: ${component.domain.name}` : undefined}
         actions={
           <div className="flex items-center gap-2">
             {saved && <span className="text-xs text-green-600 font-medium">Saved!</span>}

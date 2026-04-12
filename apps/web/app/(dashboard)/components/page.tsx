@@ -36,7 +36,7 @@ export default function ComponentsPage() {
           <div className="flex items-center gap-2">
             <ImportDialog type="component" />
             <Link
-              href="/components/new"
+              href={`/components/new${domainFilter ? `?domain=${domainFilter}` : ''}`}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors"
             >
               <Plus className="w-4 h-4" />
