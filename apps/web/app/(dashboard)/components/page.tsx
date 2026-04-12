@@ -19,7 +19,11 @@ export default function ComponentsPage() {
 
   const handleDelete = async (c: ComponentSummary) => {
     if (!confirm(`Delete "${c.name}"? This cannot be undone.`)) return;
-    await deleteMutation.mutateAsync(c.id);
+    try {
+      await deleteMutation.mutateAsync(c.id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete component");
+    }
   };
 
   const handleDuplicate = async (c: ComponentSummary) => {

@@ -103,8 +103,9 @@ export class ComponentsService {
   async remove(id: string) {
     const component = await this.findOne(id);
 
-    // Check if component is used in any template
+    // Check if component is used in any template in the same domain
     const templates = await this.prisma.template.findMany({
+      where: { domainId: component.domainId },
       select: { id: true, name: true, htmlTemplate: true },
     });
 
