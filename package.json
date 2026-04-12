@@ -14,7 +14,8 @@
     "db:generate": "turbo run db:generate",
     "db:seed": "turbo run db:seed",
     "db:studio": "cd apps/api && npx prisma studio",
-    "tunnel": "bash scripts/tunnel.sh"
+    "tunnel": "bash scripts/tunnel.sh",
+    "tunnel:setup": "bash scripts/tunnel-setup.sh"
   },
   "devDependencies": {
     "turbo": "^2.5.3",

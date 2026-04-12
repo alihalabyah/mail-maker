@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ['*.ngrok-free.dev', '*.ngrok.io', '*.trycloudflare.com'],
+  allowedDevOrigins: ['*.ngrok-free.dev', '*.ngrok.io', '*.trycloudflare.com', '*.volevant.com'],
   async rewrites() {
     return [
       {
