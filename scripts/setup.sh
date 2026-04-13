@@ -12,7 +12,7 @@ if [ ! -f "$ROOT/apps/api/.env" ]; then
   echo "  Created apps/api/.env — edit it before starting."
 fi
 
-if [ ! -f "$ROOT/apps/web/.env.local" ]; then
+if [ -f "$ROOT/apps/web/.env.local.example" ] && [ ! -f "$ROOT/apps/web/.env.local" ]; then
   cp "$ROOT/apps/web/.env.local.example" "$ROOT/apps/web/.env.local"
   echo "  Created apps/web/.env.local"
 fi

@@ -27,8 +27,8 @@ export function Sidebar() {
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
         <div className="w-7 h-8 shrink-0 relative">
           <Image
-            src="/qashio.svg"
-            alt="Qashio"
+            src="/mail-maker.svg"
+            alt="Mail Maker"
             fill
             className="invert"
           />
@@ -38,7 +38,7 @@ export function Sidebar() {
             Mail Maker
           </span>
           <span className="block text-xs" style={{ color: '#7d7e8b' }}>
-            by Qashio
+            by Ali Halabyah
           </span>
         </div>
       </div>

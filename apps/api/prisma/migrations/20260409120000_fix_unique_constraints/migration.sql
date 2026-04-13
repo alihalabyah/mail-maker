@@ -23,7 +23,7 @@ DO $$ BEGIN
     IF EXISTS (
         SELECT 1 FROM pg_constraint
         WHERE conname = 'Component_slug_key'
-        AND conrelid = 'Component'::regclass
+        AND conrelid = '"Component"'::regclass
     ) THEN
         -- Check if this constraint doesn't include domainId
         IF NOT EXISTS (

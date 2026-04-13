@@ -5,10 +5,10 @@ CREATE TABLE public."Domain" (
     description text,
     "isDefault" boolean NOT NULL DEFAULT false,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL
-);
+    "updatedAt" timestamp(3) without time zone NOT NULL,
 
-ALTER TABLE public."Domain" OWNER TO mailmaker;
+    CONSTRAINT "Domain_pkey" PRIMARY KEY ("id")
+);
 
 -- Create unique index on Domain name
 CREATE UNIQUE INDEX "Domain_name_key" ON public."Domain"(name);

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ─── Qashio Brand Tokens (Tailwind v4 @theme — emits CSS vars to :root) ── */
+/* ─── Mail Maker Brand Tokens (Tailwind v4 @theme — emits CSS vars to :root) ── */
 @theme {
   /* Font */
   --font-sans: var(--font-inter), 'Inter', ui-sans-serif, system-ui, sans-serif;

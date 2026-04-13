@@ -18,6 +18,7 @@
     "tunnel:setup": "bash scripts/tunnel-setup.sh"
   },
   "devDependencies": {
+    "@nestjs/cli": "^11.0.19",
     "turbo": "^2.5.3",
     "typescript": "^5.7.3"
   },
