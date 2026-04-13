@@ -1,16 +1,91 @@
-# Mail Maker
+<p align="center">
+  <img src="docs/editor-demo.gif" alt="mail-maker drag-and-drop editor demo" width="700">
+</p>
 
-A self-hosted email template management system. Design templates visually using a drag-and-drop editor (Unlayer), store assets in S3-compatible object storage, and expose a REST API for backend services to fetch and render templates with variable substitution at send time.
+<h1 align="center">mail-maker</h1>
+
+<p align="center">
+  Self-hosted email template manager with drag-and-drop editor, Handlebars variables, and REST API
+</p>
+
+<p align="center">
+  <a href="https://github.com/alihalabyah/mail-maker/blob/main/LICENSE"><img src="https://img.shields.io/github/license/alihalabyah/mail-maker?style=flat-square" alt="MIT License"></a>
+  <a href="https://github.com/alihalabyah/mail-maker"><img src="https://img.shields.io/github/stars/alihalabyah/mail-maker?style=flat-square" alt="Stars"></a>
+  <img src="https://img.shields.io/badge/TypeScript-80%25-3178C6?style=flat-square" alt="TypeScript">
+  <a href="https://hub.docker.com/r/alihalabyah/mail-maker"><img src="https://img.shields.io/docker/pulls/alihalabyah/mail-maker?style=flat-square" alt="Docker Pulls"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start"><b>Quick Start</b></a> &middot;
+  <a href="#why-mail-maker"><b>Why mail-maker?</b></a> &middot;
+  <a href="apps/api/.env.example"><b>Config</b></a> &middot;
+  <a href="http://localhost:3001/api/docs"><b>API Docs</b></a> &middot;
+  <a href="CONTRIBUTING.md"><b>Contributing</b></a>
+</p>
+
+---
+
+## Why mail-maker?
+
+Managing transactional email templates across teams is a mess. Templates end up hardcoded in backend repos, shared as raw HTML in Slack, or locked inside SaaS dashboards that cost money and create vendor lock-in.
+
+**mail-maker** gives your team a self-hosted visual editor for building email templates, and a simple REST API for your backend services to fetch rendered HTML at send time. It works with any email provider (Resend, SendGrid, Mailgun, SES, Postmark — anything that accepts HTML).
+
+| | mail-maker | Mailchimp / SendGrid Templates | MJML | Hardcoded HTML |
+|---|---|---|---|---|
+| **Self-hosted** | Yes | No | N/A (library) | Yes |
+| **Visual drag-and-drop editor** | Yes | Yes | No | No |
+| **Template versioning** | Yes (slug-based) | Limited | Manual | Manual |
+| **Dynamic variables** | Handlebars | Limited merge tags | Handlebars | Any |
+| **REST API for rendering** | Yes | Yes (vendor API) | No | No |
+| **No vendor lock-in** | Yes | No | Partial | Yes |
+| **Works with any email provider** | Yes | Only their own | Yes | Yes |
+| **Cost** | Free (your infra) | Paid tiers | Free | Free |
+
+## Quick Start
+
+Get mail-maker running in under 5 minutes:
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/alihalabyah/mail-maker.git
+cd mail-maker
+
+# 2. Start infrastructure (PostgreSQL, S3, Mailpit)
+docker compose up -d
+
+# 3. Install dependencies
+npm install
+
+# 4. Configure environment
+cp apps/api/.env.example apps/api/.env
+
+# 5. Set up the database
+npm run db:migrate
+npm run db:seed
+
+# 6. Start developing
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) for the editor UI, or [http://localhost:3001/api/docs](http://localhost:3001/api/docs) for the interactive API reference.
+
+<details>
+<summary>Deploy with one click</summary>
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/mail-maker)
+
+</details>
 
 ## Features
 
-- Visual drag-and-drop email editor (Unlayer / react-email-editor)
-- Handlebars variable substitution (`{{first_name}}`, `{{order_number}}`, …)
-- Template versioning with slug-based lookups
-- Image uploads to any S3-compatible storage (AWS S3, OCI, MinIO, LocalStack)
-- JWT-authenticated web UI
-- API key authentication for external service integration
-- Send-test endpoint to preview rendered emails in Mailpit
+- **Visual drag-and-drop email editor** — Unlayer / react-email-editor, no coding required
+- **Handlebars variable substitution** — inject dynamic data at send time (`{{first_name}}`, `{{order_number}}`)
+- **Template versioning with slug-based lookups** — safe deploys with rollback
+- **Image uploads to any S3-compatible storage** — AWS S3, OCI, MinIO, LocalStack
+- **JWT-authenticated web UI** — for template designers
+- **API key authentication** — for backend services consuming templates
+- **Send-test endpoint** — preview rendered emails in Mailpit
 
 ## Stack
 
@@ -25,101 +100,9 @@ A self-hosted email template management system. Design templates visually using 
 | Auth | JWT (UI) + API keys (external services) |
 | Local email testing | Mailpit |
 
-## Project Structure
-
-```
-mail-maker/
-├── apps/
-│   ├── api/                  # NestJS backend (port 3001)
-│   │   └── prisma/           # Schema, migrations, seed
-│   └── web/                  # Next.js frontend (port 3000)
-├── packages/
-│   └── shared/               # Shared TypeScript types
-├── static/
-│   └── email_templates/      # HTML templates seeded into the DB on first run
-├── scripts/
-│   └── localstack-init.sh    # Creates the S3 bucket in LocalStack
-└── docker-compose.yml        # PostgreSQL, LocalStack, Mailpit
-```
-
-## Prerequisites
-
-- Node.js 18+
-- npm 10+
-- Docker + Docker Compose
-
-## Getting Started
-
-### 1. Start infrastructure
-
-```bash
-docker compose up -d
-```
-
-This starts PostgreSQL (port 5433), LocalStack S3 (port 4566), and Mailpit (SMTP 1025, UI 8025).
-
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-### 3. Configure environment
-
-Copy and fill in the API environment file:
-
-```bash
-cp apps/api/.env.example apps/api/.env
-```
-
-Minimum required values for local development are already set in `.env`. For real S3 storage, fill in the AWS / OCI credentials.
-
-### 4. Run database migrations and seed
-
-```bash
-npm run db:migrate
-npm run db:seed
-```
-
-The seed creates the admin user `ali@qashio.com` and imports any HTML templates found in `static/email_templates/`.
-
-### 5. Start the development servers
-
-```bash
-npm run dev
-```
-
-| Service | URL |
-|---|---|
-| Web UI | http://localhost:3000 |
-| API | http://localhost:3001 |
-| API docs (Swagger) | http://localhost:3001/api/docs |
-| Mailpit inbox | http://localhost:8025 |
-
-## Environment Variables
-
-### `apps/api/.env`
-
-| Variable | Description | Default |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://mailmaker:mailmaker@localhost:5433/mailmaker` |
-| `JWT_SECRET` | Secret for signing JWT tokens | — |
-| `JWT_EXPIRY` | Token expiry | `7d` |
-| `AWS_REGION` | S3 region | `us-east-1` |
-| `AWS_ACCESS_KEY_ID` | S3 access key | — |
-| `AWS_SECRET_ACCESS_KEY` | S3 secret key | — |
-| `S3_BUCKET` | Bucket name for uploaded assets | `mail-maker-assets` |
-| `STORAGE_ENDPOINT` | Override endpoint for OCI / MinIO / LocalStack | — |
-| `SMTP_HOST` | SMTP host for test sending | `localhost` |
-| `SMTP_PORT` | SMTP port | `1025` |
-| `SMTP_FROM` | From address for test sends | `mailmaker@mail-maker.local` |
-| `PORT` | API server port | `3001` |
-| `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:3000` |
-| `ADMIN_PASSWORD` | Overrides the seeded admin password | — |
-
 ## API Reference
 
-All external API endpoints require an API key. Create one in the UI under **Settings → API Keys**, then pass it as a header:
+All external API endpoints require an API key. Create one in the UI under **Settings > API Keys**, then pass it as a header:
 
 ```
 X-API-Key: mk_your_key_here
@@ -152,8 +135,6 @@ POST /v1/render/:templateSlug
 }
 ```
 
-**cURL**
-
 ```bash
 curl -X POST https://your-host/v1/render/order-confirmation \
   -H "Content-Type: application/json" \
@@ -167,28 +148,13 @@ curl -X POST https://your-host/v1/render/order-confirmation \
 GET /v1/templates/:templateSlug
 ```
 
-Returns the template name, subject, description, and variable schema. Does not return the design JSON or raw HTML.
+Returns the template name, subject, description, and variable schema.
 
 ### Send a test email
-
-Renders the template and delivers it via SMTP. Useful for previewing in Mailpit or any SMTP server.
 
 ```
 POST /v1/send-test/:templateSlug
 ```
-
-**Request body**
-
-```json
-{
-  "to": "you@example.com",
-  "variables": {
-    "first_name": "John"
-  }
-}
-```
-
-**cURL**
 
 ```bash
 curl -X POST http://localhost:3001/v1/send-test/order-confirmation \
@@ -211,34 +177,40 @@ Variables are declared per template in the UI sidebar. At render time, undeclare
 
 ## Handlebars Helpers
 
-The render service registers these built-in helpers:
-
 | Helper | Example | Output |
 |---|---|---|
 | `upper` | `{{upper name}}` | `JOHN` |
 | `lower` | `{{lower name}}` | `john` |
 | `formatDate` | `{{formatDate createdAt}}` | `April 5, 2026` |
 
-## Useful Commands
+## Configuration
 
-```bash
-# Run DB migrations
-npm run db:migrate
+<details>
+<summary>Environment variables</summary>
 
-# Regenerate Prisma client after schema changes
-npm run db:generate
+### `apps/api/.env`
 
-# Seed admin user + HTML templates
-npm run db:seed
+| Variable | Description | Default |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://mailmaker:mailmaker@localhost:5433/mailmaker` |
+| `JWT_SECRET` | Secret for signing JWT tokens | — |
+| `JWT_EXPIRY` | Token expiry | `7d` |
+| `AWS_REGION` | S3 region | `us-east-1` |
+| `AWS_ACCESS_KEY_ID` | S3 access key | — |
+| `AWS_SECRET_ACCESS_KEY` | S3 secret key | — |
+| `S3_BUCKET` | Bucket name for uploaded assets | `mail-maker-assets` |
+| `STORAGE_ENDPOINT` | Override endpoint for OCI / MinIO / LocalStack | — |
+| `SMTP_HOST` | SMTP host for test sending | `localhost` |
+| `SMTP_PORT` | SMTP port | `1025` |
+| `SMTP_FROM` | From address for test sends | `mailmaker@mail-maker.local` |
+| `PORT` | API server port | `3001` |
+| `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:3000` |
+| `ADMIN_PASSWORD` | Overrides the seeded admin password | — |
 
-# Open Prisma Studio (DB browser)
-npm run db:studio
+</details>
 
-# Build all apps
-npm run build
-```
-
-## OCI Object Storage
+<details>
+<summary>OCI Object Storage</summary>
 
 To use Oracle Cloud Infrastructure S3-compatible storage, set:
 
@@ -252,6 +224,40 @@ S3_BUCKET=<bucket-name>
 
 The `forcePathStyle` flag is enabled automatically when `STORAGE_ENDPOINT` is set.
 
-## Seeding HTML Templates
+</details>
 
-Drop `.html` files into `static/email_templates/` and run `npm run db:seed`. Each file becomes a template whose slug is derived from the filename. Already-seeded slugs are skipped on subsequent runs.
+## Useful Commands
+
+```bash
+npm run dev            # Start all services in development mode
+npm run build          # Build all apps
+npm run db:migrate     # Run database migrations
+npm run db:generate    # Regenerate Prisma client
+npm run db:seed        # Seed admin user + HTML templates
+npm run db:studio      # Open Prisma Studio (DB browser)
+```
+
+## Project Structure
+
+```
+mail-maker/
+├── apps/
+│   ├── api/                  # NestJS backend (port 3001)
+│   │   └── prisma/           # Schema, migrations, seed
+│   └── web/                  # Next.js frontend (port 3000)
+├── packages/
+│   └── shared/               # Shared TypeScript types
+├── static/
+│   └── email_templates/      # HTML templates seeded into the DB
+├── scripts/
+│   └── localstack-init.sh    # Creates the S3 bucket in LocalStack
+└── docker-compose.yml        # PostgreSQL, LocalStack, Mailpit
+```
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+[MIT](LICENSE) &mdash; free for personal and commercial use.
