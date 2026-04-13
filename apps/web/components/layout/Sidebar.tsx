@@ -29,8 +29,10 @@ export function Sidebar() {
           <Image
             src="/mail-maker.svg"
             alt="Mail Maker"
-            fill
+            width={28}
+            height={34}
             className="invert"
+            style={{ width: 'auto', height: 34 }}
           />
         </div>
         <div className="leading-tight">

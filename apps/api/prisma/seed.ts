@@ -6,7 +6,7 @@ import * as path from 'path';
 const prisma = new PrismaClient();
 
 const ADMIN_EMAIL = 'ali@halabyah.dev';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'Xw7#kQ2$mP9@vL4n';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'changeme123';
 
 function slugify(text: string): string {
   return text
