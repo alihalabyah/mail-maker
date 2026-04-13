@@ -29,7 +29,7 @@ async function request<T>(
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
   if (!res.ok) {
-    if (res.status === 401) {
+    if (res.status === 401 && !path.startsWith('/auth/')) {
       clearToken();
       window.location.href = '/login';
       return undefined as T;

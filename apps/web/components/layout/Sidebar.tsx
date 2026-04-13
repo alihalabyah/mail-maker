@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { LayoutTemplate, Puzzle, Key, Globe, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,15 +24,8 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-        <div className="w-7 h-8 shrink-0 relative">
-          <Image
-            src="/mail-maker.svg"
-            alt="Mail Maker"
-            width={28}
-            height={34}
-            className="invert"
-            style={{ width: 'auto', height: 34 }}
-          />
+        <div className="w-7 h-8 shrink-0">
+          <img src="/mail-maker.svg" alt="Mail Maker" width={28} height={34} className="invert" />
         </div>
         <div className="leading-tight">
           <span className="block text-white text-sm font-semibold tracking-wide">

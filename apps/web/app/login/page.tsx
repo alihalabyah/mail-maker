@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,7 +28,7 @@ export default function LoginPage() {
         style={{ backgroundColor: '#2E2F32' }}
       >
         <div className="flex items-center gap-3">
-          <Image src="/mail-maker.svg" alt="Mail Maker" width={28} height={34} className="invert" style={{ width: 'auto', height: 34 }} />
+          <img src="/mail-maker.svg" alt="Mail Maker" width={28} height={34} className="invert" />
           <span className="text-white text-sm font-semibold tracking-wide">Mail Maker</span>
         </div>
         <p className="text-sm" style={{ color: '#7d7e8b' }}>
@@ -42,7 +41,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <Image src="/mail-maker.svg" alt="Mail Maker" width={24} height={30} style={{ width: 'auto', height: 30 }} />
+            <img src="/mail-maker.svg" alt="Mail Maker" width={24} height={30} />
             <span className="text-base font-semibold" style={{ color: '#2e2f32' }}>
               Mail Maker
             </span>

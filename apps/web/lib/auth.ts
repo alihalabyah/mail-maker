@@ -1,17 +1,18 @@
-import Cookies from "js-cookie";
-
 const TOKEN_KEY = "mm_access_token";
 
 export function getToken(): string | undefined {
-  return Cookies.get(TOKEN_KEY);
+  if (typeof window === "undefined") return undefined;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${TOKEN_KEY}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
 }
 
 export function setToken(token: string): void {
-  Cookies.set(TOKEN_KEY, token, { expires: 7, sameSite: "strict" });
+  const expires = new Date(Date.now() + 7 * 864e5).toUTCString();
+  document.cookie = `${TOKEN_KEY}=${encodeURIComponent(token)}; expires=${expires}; path=/; samesite=strict`;
 }
 
 export function clearToken(): void {
-  Cookies.remove(TOKEN_KEY);
+  document.cookie = `${TOKEN_KEY}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; samesite=strict`;
 }
 
 export function isAuthenticated(): boolean {
