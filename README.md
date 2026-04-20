@@ -8,6 +8,9 @@
   Self-hosted email template manager with drag-and-drop editor, Handlebars variables, and REST API
 </p>
 
+<img width="1716" height="912" alt="image" src="https://github.com/user-attachments/assets/a50de162-33ce-46fe-9831-91d08fe876ca" />
+
+
 <p align="center">
   <a href="https://github.com/alihalabyah/mail-maker/blob/main/LICENSE"><img src="https://img.shields.io/github/license/alihalabyah/mail-maker?style=flat-square" alt="MIT License"></a>
   <a href="https://github.com/alihalabyah/mail-maker"><img src="https://img.shields.io/github/stars/alihalabyah/mail-maker?style=flat-square" alt="Stars"></a>
