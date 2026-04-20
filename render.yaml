@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: mail-maker-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && cd apps/api && npx prisma generate && npm run build
+    startCommand: cd apps/api && npx prisma migrate deploy && node dist/src/main.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRY
+        value: 7d
+      - key: AWS_REGION
+        value: us-east-1
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET
+        value: mail-maker-assets
+      - key: STORAGE_ENDPOINT
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

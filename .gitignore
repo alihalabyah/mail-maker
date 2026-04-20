@@ -11,3 +11,4 @@ prisma/migrations/**/migration.sql
 .DS_Store
 coverage
 apps/web.worktrees/
+.vercel
