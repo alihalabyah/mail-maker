@@ -28,6 +28,17 @@
 
 ---
 
+## Demo
+
+Try the live instance: [mail-maker-seven.vercel.app](https://mail-maker-seven.vercel.app)
+
+| | |
+|---|---|
+| **Email** | `ali@halabyah.dev` |
+| **Password** | `changeme123` |
+
+---
+
 ## Why mail-maker?
 
 Managing transactional email templates across teams is a mess. Templates end up hardcoded in backend repos, shared as raw HTML in Slack, or locked inside SaaS dashboards that cost money and create vendor lock-in.
